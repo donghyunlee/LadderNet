@@ -14,7 +14,7 @@ import theano
 from theano.tensor.type import TensorType
 
 from blocks.algorithms import GradientDescent, Adam
-from blocks.extensions import FinishAfter
+from blocks.extensions import FinishAfter, Printing
 from blocks.extensions.monitoring import TrainingDataMonitoring
 from blocks.filter import VariableFilter
 from blocks.graph import ComputationGraph
@@ -237,10 +237,13 @@ def setup_data(p, test_set=False):
     if p.get('unlabeled_samples') is not None:
         training_set_size = p.unlabeled_samples
 
-    train_set = dataset_class("train")
+    train_set = dataset_class(("train",))
 
     # Make sure the MNIST data is in right format
     if p.dataset == 'mnist':
+        train_set.data_sources = (
+            (train_set.data_sources[0] / 255.).astype(numpy.float32),
+            train_set.data_sources[1])
         d = train_set.data_sources[train_set.sources.index('features')]
         assert numpy.all(d <= 1.0) and numpy.all(d >= 0.0), \
             'Make sure data is in float format and in range 0 to 1'
@@ -320,7 +323,7 @@ def analyze(cli_params):
         main_loop = DummyLoop(
             extensions=[
                 FinalTestMonitoring(
-                    [ladder.costs.class_clean, ladder.error.clean]
+                    [ladder.costs.class_clean, ladder.error]
                     + ladder.costs.denois.values(),
                     make_datastream(data.train, data.train_ind,
                                     # These need to match with the training
@@ -336,16 +339,7 @@ def analyze(cli_params):
                                     cnorm=cnorm,
                                     whiten=whiten, scheme=ShuffledScheme),
                     prefix="valid_final", before_training=True),
-                ShortPrinting({
-                    "valid_final": OrderedDict([
-                        ('VF_C_class', ladder.costs.class_clean),
-                        ('VF_E', ladder.error.clean),
-                        ('VF_C_de', [ladder.costs.denois.get(0),
-                                     ladder.costs.denois.get(1),
-                                     ladder.costs.denois.get(2),
-                                     ladder.costs.denois.get(3)]),
-                    ]),
-                }, after_training=True, use_log=False),
+                Printing()
             ])
         main_loop.run()
 
@@ -424,22 +418,12 @@ def train(cli_params):
     # In addition to actual training, also do BN variable approximations
     training_algorithm.add_updates(bn_updates)
 
-    short_prints = {
-        "train": {
-            'T_C_class': ladder.costs.class_corr,
-            'T_C_de': ladder.costs.denois.values(),
-        },
-        "valid_approx": OrderedDict([
-            ('V_C_class', ladder.costs.class_clean),
-            ('V_E', ladder.error.clean),
-            ('V_C_de', ladder.costs.denois.values()),
-        ]),
-        "valid_final": OrderedDict([
-            ('VF_C_class', ladder.costs.class_clean),
-            ('VF_E', ladder.error.clean),
-            ('VF_C_de', ladder.costs.denois.values()),
-        ]),
-    }
+    monitored_variables = [
+        ladder.costs.class_corr, 
+        ladder.costs.class_clean,
+        ladder.error, 
+#         training_algorithm.total_gradient_norm,
+        ladder.costs.total] + ladder.costs.denois.values()
 
     main_loop = MainLoop(
         training_algorithm,
@@ -458,7 +442,7 @@ def train(cli_params):
             # running average estimates of the batch normalization
             # parameters, mean and variance
             ApproxTestMonitoring(
-                [ladder.costs.class_clean, ladder.error.clean]
+                [ladder.costs.class_clean, ladder.error]
                 + ladder.costs.denois.values(),
                 make_datastream(data.valid, data.valid_ind,
                                 p.valid_batch_size, whiten=whiten, cnorm=cnorm,
@@ -469,7 +453,7 @@ def train(cli_params):
             # estimate batch normalization parameters from training data and
             # then do another pass to calculate the validation error.
             FinalTestMonitoring(
-                [ladder.costs.class_clean, ladder.error.clean]
+                [ladder.costs.class_clean, ladder.error]
                 + ladder.costs.denois.values(),
                 make_datastream(data.train, data.train_ind,
                                 p.batch_size,
@@ -485,15 +469,14 @@ def train(cli_params):
                 after_n_epochs=p.num_epochs),
 
             TrainingDataMonitoring(
-                [ladder.costs.total, ladder.costs.class_corr,
-                 training_algorithm.total_gradient_norm]
-                + ladder.costs.denois.values(),
+                variables=monitored_variables,
                 prefix="train", after_epoch=True),
 
             SaveParams(None, all_params, p.save_dir, after_epoch=True),
             SaveExpParams(p, p.save_dir, before_training=True),
             SaveLog(p.save_dir, after_training=True),
-            ShortPrinting(short_prints),
+            Printing(),
+#             ShortPrinting(short_prints),
             LRDecay(ladder.lr, p.num_epochs * p.lrate_decay, p.num_epochs,
                     after_epoch=True),
         ])
