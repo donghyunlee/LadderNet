@@ -1,4 +1,5 @@
 import os
+from misc import *
 
 import logging
 import numpy as np
@@ -20,13 +21,6 @@ def shared_param(init, name, cast_float32, role, **kwargs):
     return p
 
 
-class AttributeDict(dict):
-    __getattr__ = dict.__getitem__
-
-    def __setattr__(self, a, b):
-        self.__setitem__(a, b)
-
-
 class DummyLoop(MainLoop):
     def __init__(self, extensions):
         return super(DummyLoop, self).__init__(algorithm=None,
@@ -40,78 +34,111 @@ class DummyLoop(MainLoop):
         self._run_extensions('after_training')
 
 
-class ShortPrinting(Printing):
-    def __init__(self, to_print, use_log=True, **kwargs):
-        self.to_print = to_print
-        self.use_log = use_log
-        super(ShortPrinting, self).__init__(**kwargs)
-
-    def do(self, which_callback, *args):
-        log = self.main_loop.log
-
-        # Iteration
-        msg = "e {}, i {}:".format(
-            log.status['epochs_done'],
-            log.status['iterations_done'])
-
-        # Requested channels
-        items = []
-        for k, vars in self.to_print.iteritems():
-            for shortname, vars in vars.iteritems():
-                if vars is None:
-                    continue
-                if type(vars) is not list:
-                    vars = [vars]
-
-                s = ""
-                for var in vars:
-                    try:
-                        name = k + '_' + var.name
-                        val = log.current_row[name]
-                    except:
-                        continue
-                    try:
-                        s += ' ' + ' '.join(["%.3g" % v for v in val])
-                    except:
-                        s += " %.3g" % val
-                if s != "":
-                    items += [shortname + s]
-        msg = msg + ", ".join(items)
-        if self.use_log:
-            logger.info(msg)
-        else:
-            print msg
+# class ShortPrinting(Printing):
+#     def __init__(self, to_print, use_log=True, **kwargs):
+#         self.to_print = to_print
+#         self.use_log = use_log
+#         super(ShortPrinting, self).__init__(**kwargs)
+# 
+#     def do(self, which_callback, *args):
+#         log = self.main_loop.log
+# 
+#         # Iteration
+#         msg = "e {}, i {}:".format(
+#             log.status['epochs_done'],
+#             log.status['iterations_done'])
+# 
+#         # Requested channels
+#         items = []
+#         for k, vars in self.to_print.iteritems():
+#             for shortname, vars in vars.iteritems():
+#                 if vars is None:
+#                     continue
+#                 if type(vars) is not list:
+#                     vars = [vars]
+# 
+#                 s = ""
+#                 for var in vars:
+#                     try:
+#                         name = k + '_' + var.name
+#                         val = log.current_row[name]
+#                     except:
+#                         continue
+#                     try:
+#                         s += ' ' + ' '.join(["%.3g" % v for v in val])
+#                     except:
+#                         s += " %.3g" % val
+#                 if s != "":
+#                     items += [shortname + s]
+#         msg = msg + ", ".join(items)
+#         if self.use_log:
+#             logger.info(msg)
+#         else:
+#             print msg
 
 
 class SaveParams(SimpleExtension):
     """Finishes the training process when triggered."""
-    def __init__(self, trigger_var, params, save_path, **kwargs):
+    def __init__(self, early_stop_var, model, save_path, **kwargs):
         super(SaveParams, self).__init__(**kwargs)
-        if trigger_var is None:
-            self.var_name = None
-        else:
-            self.var_name = trigger_var[0] + '_' + trigger_var[1].name
+        self.early_stop_var = early_stop_var
         self.save_path = save_path
-        self.params = params
+        params_dicts = model.params
+        self.params_names = params_dicts.keys()
+        self.params_values = params_dicts.values()
         self.to_save = {}
         self.best_value = None
         self.add_condition('after_training', self.save)
         self.add_condition('on_interrupt', self.save)
+        self.add_condition('after_epoch', self.do)
 
     def save(self, which_callback, *args):
-        if self.var_name is None:
-            self.to_save = {v.name: v.get_value() for v in self.params}
+        to_save = {}
+        for p_name, p_value in zip(self.params_names, self.params_values):
+            to_save[p_name] = p_value.get_value()
         path = self.save_path + '/trained_params'
-        logger.info('Saving to %s' % path)
-        np.savez_compressed(path, **self.to_save)
+        np.savez_compressed(path, **to_save)
 
     def do(self, which_callback, *args):
-        if self.var_name is None:
-            return
-        val = self.main_loop.log.current_row[self.var_name]
+        val = self.main_loop.log.current_row[self.early_stop_var]
         if self.best_value is None or val < self.best_value:
             self.best_value = val
-        self.to_save = {v.name: v.get_value() for v in self.params}
+            to_save = {}
+            for p_name, p_value in zip(self.params_names, self.params_values):
+                to_save[p_name] = p_value.get_value()
+            path = self.save_path + '/trained_params_best'
+            np.savez_compressed(path, **to_save)
+
+
+# class SaveParams(SimpleExtension):
+#     """Finishes the training process when triggered."""
+#     def __init__(self, trigger_var, params, save_path, **kwargs):
+#         super(SaveParams, self).__init__(**kwargs)
+#         if trigger_var is None:
+#             self.var_name = None
+#         else:
+#             self.var_name = trigger_var[0] + '_' + trigger_var[1].name
+#         self.save_path = save_path
+#         self.params = params
+#         self.to_save = {}
+#         self.best_value = None
+#         self.add_condition('after_training', self.save)
+#         self.add_condition('on_interrupt', self.save)
+# 
+#     def save(self, which_callback, *args):
+#         if self.var_name is None:
+#             self.to_save = {v.name: v.get_value() for v in self.params}
+#         path = self.save_path + '/trained_params'
+#         logger.info('Saving to %s' % path)
+#         np.savez_compressed(path, **self.to_save)
+# 
+#     def do(self, which_callback, *args):
+#         if self.var_name is None:
+#             return
+#         val = self.main_loop.log.current_row[self.var_name]
+#         if self.best_value is None or val < self.best_value:
+#             self.best_value = val
+#         self.to_save = {v.name: v.get_value() for v in self.params}
 
 
 class SaveExpParams(SimpleExtension):
@@ -126,16 +153,27 @@ class SaveExpParams(SimpleExtension):
                   complevel=5, complib='blosc')
 
 
+# class SaveLog(SimpleExtension):
+#     def __init__(self, dir, show=None, **kwargs):
+#         super(SaveLog, self).__init__(**kwargs)
+#         self.dir = dir
+#         self.show = show if show is not None else []
+# 
+#     def do(self, which_callback, *args):
+#         df = self.main_loop.log.to_dataframe()
+#         df.to_hdf(os.path.join(self.dir, 'log'), 'log', mode='w',
+#                   complevel=5, complib='blosc')
+
 class SaveLog(SimpleExtension):
     def __init__(self, dir, show=None, **kwargs):
         super(SaveLog, self).__init__(**kwargs)
-        self.dir = dir
-        self.show = show if show is not None else []
 
     def do(self, which_callback, *args):
-        df = self.main_loop.log.to_dataframe()
-        df.to_hdf(os.path.join(self.dir, 'log'), 'log', mode='w',
-                  complevel=5, complib='blosc')
+        epoch = self.main_loop.status['epochs_done']
+        current_row = self.main_loop.log.current_row
+        logger.info("\nIter:%d" % epoch)
+        for element in current_row:
+            logger.info(str(element) + ":%f" % current_row[element])
 
 
 def prepare_dir(save_to, results_dir='results'):
