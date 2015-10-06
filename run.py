@@ -397,6 +397,7 @@ def train(cli_params):
 
     p, loaded = load_and_log_params(cli_params)
     in_dim, data, whiten, cnorm = setup_data(p, test_set=False)
+    
     if not loaded:
         # Set the zero layer to match input dimensions
         p.encoder_layers = (in_dim,) + p.encoder_layers
@@ -418,6 +419,8 @@ def train(cli_params):
     # In addition to actual training, also do BN variable approximations
     training_algorithm.add_updates(bn_updates)
 
+    model=Model(ladder.costs.total)
+
     monitored_variables = [
         ladder.costs.class_corr, 
         ladder.costs.class_clean,
@@ -434,7 +437,7 @@ def train(cli_params):
                         n_unlabeled=p.unlabeled_samples,
                         whiten=whiten,
                         cnorm=cnorm),
-        model=Model(ladder.costs.total),
+        model=model,
         extensions=[
             FinishAfter(after_n_epochs=p.num_epochs),
 
@@ -472,9 +475,10 @@ def train(cli_params):
                 variables=monitored_variables,
                 prefix="train", after_epoch=True),
 
-            SaveParams(None, all_params, p.save_dir, after_epoch=True),
+            SaveParams('test_CE_corr', model, p.save_path),
+#             SaveParams(None, all_params, p.save_dir, after_epoch=True),
             SaveExpParams(p, p.save_dir, before_training=True),
-            SaveLog(p.save_dir, after_training=True),
+            SaveLog(p.save_dir, after_epoch=True),
             Printing(),
 #             ShortPrinting(short_prints),
             LRDecay(ladder.lr, p.num_epochs * p.lrate_decay, p.num_epochs,
