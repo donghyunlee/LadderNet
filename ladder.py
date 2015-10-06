@@ -149,7 +149,6 @@ class LadderAE():
         self.costs.denois = AttributeDict()
 
         self.act = AttributeDict()
-        self.error = AttributeDict()
 
         top = len(layers) - 1
 
@@ -273,8 +272,8 @@ class LadderAE():
 
         # Classification error
         mr = MisclassificationRate()
-        self.error.clean = mr.apply(y, clean.labeled.h[top]) * np.float32(100.)
-        self.error.clean.name = 'error_rate_clean'
+        self.error = mr.apply(y, clean.labeled.h[top]) * np.float32(100.)
+        self.error.name = 'error_rate'
 
     def apply_act(self, input, act_name):
         if input is None:
@@ -517,6 +516,34 @@ class LadderAE():
             b = bi(0.0, 'b')
 
             z_est = a1 * z_lat + b
+
+        elif g_type == 'simple':
+            z_est = (bi(0., 'a1') +
+                     wi(0., 'a3') * u +
+                     wi(1., 'a2') * z_lat +
+                     wi(0., 'a4') * z_lat * u)
+            
+        elif g_type.startswith('fullmlp'):
+            # "fullmlp:5" number after colon specifies hidden unit
+            n_hidden = int(g_type[g_type.find(':') + 1:])
+
+            def get_rand_shareds(suffix, role=WEIGHT):
+                return [self.shared(np.random.randn(out_dim) / np.sqrt(out_dim), 
+                                    gen_id(suffix + str(i)), role=role) 
+                        for i in range(n_hidden)]
+
+            wz = get_rand_shareds('wz')
+            wu = get_rand_shareds('wu')
+            b = get_rand_shareds('b', role=BIAS)
+            wout = get_rand_shareds('wout')
+
+            z_est = None
+            for i in range(n_hidden):
+                z_tmp = wout[i] * self.apply_act(b[i] + wz[i] * z_lat + wu[i] * u, 'relu')
+                if z_est is None:
+                    z_est = z_tmp
+                else:
+                    z_est += z_tmp
 
         elif g_type in ['relu']:
             assert u is not None
