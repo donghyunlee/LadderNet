@@ -31,7 +31,7 @@ from itertools import izip, product, tee
 
 logger = logging.getLogger('main')
 
-from utils import ShortPrinting, prepare_dir, load_df, DummyLoop
+from utils import prepare_dir, load_df, DummyLoop
 from utils import SaveExpParams, SaveLog, SaveParams, AttributeDict
 from nn import ZCA, ContrastNorm
 from nn import ApproxTestMonitoring, FinalTestMonitoring, TestMonitoring
@@ -267,7 +267,7 @@ def setup_data(p, test_set=False):
 
     # Only touch test data if requested
     if test_set:
-        d.test = dataset_class("test")
+        d.test = dataset_class(("test",))
         d.test_ind = numpy.arange(d.test.num_examples)
 
     # Setup optional whitening, only used for Cifar-10
@@ -426,7 +426,8 @@ def train(cli_params):
         ladder.costs.class_clean,
         ladder.error, 
 #         training_algorithm.total_gradient_norm,
-        ladder.costs.total] + ladder.costs.denois.values()
+        ladder.costs.total] \
+#         + ladder.costs.denois.values()
 
     main_loop = MainLoop(
         training_algorithm,
@@ -445,8 +446,7 @@ def train(cli_params):
             # running average estimates of the batch normalization
             # parameters, mean and variance
             ApproxTestMonitoring(
-                [ladder.costs.class_clean, ladder.error]
-                + ladder.costs.denois.values(),
+                monitored_variables,
                 make_datastream(data.valid, data.valid_ind,
                                 p.valid_batch_size, whiten=whiten, cnorm=cnorm,
                                 scheme=ShuffledScheme),
@@ -456,8 +456,7 @@ def train(cli_params):
             # estimate batch normalization parameters from training data and
             # then do another pass to calculate the validation error.
             FinalTestMonitoring(
-                [ladder.costs.class_clean, ladder.error]
-                + ladder.costs.denois.values(),
+                monitored_variables,
                 make_datastream(data.train, data.train_ind,
                                 p.batch_size,
                                 n_labeled=p.labeled_samples,
@@ -475,7 +474,7 @@ def train(cli_params):
                 variables=monitored_variables,
                 prefix="train", after_epoch=True),
 
-            SaveParams('test_CE_corr', model, p.save_path),
+            SaveParams('valid_approx_cost_class_corr', model, p.save_dir),
 #             SaveParams(None, all_params, p.save_dir, after_epoch=True),
             SaveExpParams(p, p.save_dir, before_training=True),
             SaveLog(p.save_dir, after_epoch=True),
