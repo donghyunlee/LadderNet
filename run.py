@@ -237,10 +237,13 @@ def setup_data(p, test_set=False):
     if p.get('unlabeled_samples') is not None:
         training_set_size = p.unlabeled_samples
 
-    train_set = dataset_class("train")
+    train_set = dataset_class(("train",))
 
     # Make sure the MNIST data is in right format
     if p.dataset == 'mnist':
+        train_set.data_sources = (
+            (train_set.data_sources[0] / 255.).astype(numpy.float32),
+            train_set.data_sources[1])
         d = train_set.data_sources[train_set.sources.index('features')]
         assert numpy.all(d <= 1.0) and numpy.all(d >= 0.0), \
             'Make sure data is in float format and in range 0 to 1'
@@ -264,8 +267,12 @@ def setup_data(p, test_set=False):
 
     # Only touch test data if requested
     if test_set:
-        d.test = dataset_class("test")
+        d.test = dataset_class(("test",))
         d.test_ind = numpy.arange(d.test.num_examples)
+        if p.dataset == 'mnist':
+            d.test.data_sources = (
+                (d.test.data_sources[0] / 255.).astype(numpy.float32),
+                d.test.data_sources[1])
 
     # Setup optional whitening, only used for Cifar-10
     in_dim = train_set.data_sources[train_set.sources.index('features')].shape[1:]
