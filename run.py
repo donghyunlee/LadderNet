@@ -269,6 +269,10 @@ def setup_data(p, test_set=False):
     if test_set:
         d.test = dataset_class(("test",))
         d.test_ind = numpy.arange(d.test.num_examples)
+        if p.dataset == 'mnist':
+            d.test.data_sources = (
+                (d.test.data_sources[0] / 255.).astype(numpy.float32),
+                d.test.data_sources[1])
 
     # Setup optional whitening, only used for Cifar-10
     in_dim = train_set.data_sources[train_set.sources.index('features')].shape[1:]

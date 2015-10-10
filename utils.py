@@ -100,6 +100,8 @@ class SaveParams(SimpleExtension):
         np.savez_compressed(path, **to_save)
 
     def do(self, which_callback, *args):
+        if self.early_stop_var is None:
+            return
         val = self.main_loop.log.current_row[self.early_stop_var]
         if self.best_value is None or val < self.best_value:
             self.best_value = val

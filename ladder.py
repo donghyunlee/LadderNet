@@ -532,10 +532,10 @@ class LadderAE():
                                     gen_id(suffix + str(i)), role=role) 
                         for i in range(n_hidden)]
 
-            wz = get_rand_shareds('wz')
-            wu = get_rand_shareds('wu')
-            b = get_rand_shareds('b', role=BIAS)
-            wout = get_rand_shareds('wout')
+            wz = get_rand_shareds('mini_wz')
+            wu = get_rand_shareds('mini_wu')
+            b = get_rand_shareds('mini_b', role=BIAS)
+            wout = get_rand_shareds('mini_wout')
 
             z_est = None
             for i in range(n_hidden):
