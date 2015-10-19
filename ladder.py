@@ -495,6 +495,13 @@ class LadderAE():
         wi = lambda inits, name: self.weight(inits * np.ones(num_filters),
                                              gen_id(name), for_conv=is_conv)
 
+        # random gaussian initialization
+        gbi = lambda name: self.bias(.1 * np.random.randn(num_filters),
+                                           gen_id(name), for_conv=is_conv)
+        gwi = lambda name: self.weight(.1 * np.random.randn(num_filters),
+                                             gen_id(name), for_conv=is_conv)
+
+
         if g_type == '':
             z_est = None
 
@@ -511,6 +518,26 @@ class LadderAE():
             if u is not None:
                 z_est += wi(0., 'a3') * u + wi(0., 'a4') * z_lat * u
 
+        elif g_type in ['sig_nomult']:
+            sigval = bi(0., 'c1') + wi(1., 'c2') * z_lat
+            if u is not None:
+                sigval += wi(0., 'c3') * u
+            sigval = T.nnet.sigmoid(sigval)
+
+            z_est = bi(0., 'a1') + wi(1., 'a2') * z_lat + wi(1., 'b1') * sigval
+            if u is not None:
+                z_est += wi(0., 'a3') * u
+
+        elif g_type in ['sig_gaussian']:
+            sigval = gbi('c1') + gwi('c2') * z_lat
+            if u is not None:
+                sigval += gwi('c3') * u + gwi('c4') * z_lat * u
+            sigval = T.nnet.sigmoid(sigval)
+
+            z_est = gbi('a1') + gwi('a2') * z_lat + gwi('b1') * sigval
+            if u is not None:
+                z_est += gwi('a3') * u + gwi('a4') * z_lat * u
+
         elif g_type in ['lin']:
             a1 = wi(1.0, 'a1')
             b = bi(0.0, 'b')
@@ -522,7 +549,7 @@ class LadderAE():
                      wi(0., 'a3') * u +
                      wi(1., 'a2') * z_lat +
                      wi(0., 'a4') * z_lat * u)
-            
+
         elif g_type.startswith('fullmlp'):
             # "fullmlp:5" number after colon specifies hidden unit
             n_hidden = int(g_type[g_type.find(':') + 1:])
