@@ -56,6 +56,7 @@ def automate(specs):
             '--labeled-samples {labelled} '
             '--unlabeled-samples 60000 '
             '--num-epochs 150 '
+            '--dseed 777 ' # shouldn't change across experiments
             '--seed {seed}'.format(**setting),
             'logs/{dir}.txt'.format(**setting))
 
