@@ -8,12 +8,6 @@ KEYS = ['decoder', 'labelled']
 
 SPEC = {}
 
-# damascus
-SPEC['dam'] = [('original', '100'), 
-               ('original_rev', '100'), 
-               ('original_rand', '100'), 
-               ('original+relu', '100')]
-
 # pretoria
 SPEC['pre'] = [('original', '100'), 
                ('original_rev', '100'), 
@@ -21,22 +15,28 @@ SPEC['pre'] = [('original', '100'),
                ('original+relu', '100')]
 
 # kathmandu
-SPEC['kat'] = [('original', '100'), 
-               ('original_rev', '100'), 
-               ('original_rand', '100'), 
-               ('original+relu', '100')]
+SPEC['kat'] = [('lin', '100'), 
+               ('lin+mult', '100'), 
+               ('lin+sig', '100'), 
+               ('lin+relu', '100')]
 
 # baghdad
-SPEC['bag'] = [('original', '100'), 
-               ('original_rev', '100'), 
-               ('original_rand', '100'), 
-               ('original+relu', '100')]
+SPEC['bag'] = [('fullmlp_2_sig_zeroone', '100'), 
+               ('fullmlp_2_sig_rand', '100'), 
+               ('fullmlp_3_sig_zeroone', '100'), 
+               ('fullmlp_3_sig_rand', '100')]
 
 # budapest
-SPEC['bud'] = [('original', '100'), 
-               ('original_rev', '100'), 
-               ('original_rand', '100'), 
-               ('original+relu', '100')]
+SPEC['bud'] = [('fullmlp_2_relu_rand', '100'), 
+               ('fullmlp_3_relu_rand', '100'), 
+               ('original', '1000'), 
+               ('original_rand', '1000')]
+
+# damascus
+SPEC['dam'] = [('lin+mult', '1000'), 
+               ('lin+sig', '1000'), 
+               ('fullmlp_2_sig_rand', '1000'), 
+               ('fullmlp_3_sig_rand', '1000')]
 
 # lisbon
 SPEC['lis'] = []
