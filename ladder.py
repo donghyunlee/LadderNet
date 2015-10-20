@@ -576,7 +576,7 @@ class LadderAE():
                 initer = g_type[3]
             
             def get_rand_shareds(suffix, role=WEIGHT):
-                return [self.shared(.2 * np.random.randn(out_dim), 
+                return [self.shared(.05 * np.random.randn(out_dim), 
                                     gen_id(suffix + str(i)), role=role)
                         for i in range(n_hidden)]
 
@@ -591,10 +591,10 @@ class LadderAE():
                 b = get_rand_shareds('mlp_b', role=BIAS)
                 wo = get_rand_shareds('mlp_wo')
             elif initer == 'zeroone':
-                wz = get_const_shareds('mlp_wz', 1)
+                wz = get_const_shareds('mlp_wz', 1./n_hidden)
                 wu = get_const_shareds('mlp_wu', 0)
                 b = get_const_shareds('mlp_b', 0, role=BIAS)
-                wo = get_const_shareds('mlp_wo', 1)
+                wo = get_const_shareds('mlp_wo', 1./n_hidden)
 
             z_est = 0
             for i in range(n_hidden):
