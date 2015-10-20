@@ -17,6 +17,7 @@ from blocks.roles import add_role, PARAMETER, WEIGHT, BIAS
 
 from utils import shared_param, AttributeDict
 from nn import maxpool_2d, global_meanpool_2d, BNPARAM
+from misc import *
 
 logger = logging.getLogger('main.model')
 floatX = theano.config.floatX
@@ -496,9 +497,9 @@ class LadderAE():
                                              gen_id(name), for_conv=is_conv)
 
         # random gaussian initialization
-        gbi = lambda name: self.bias(.1 * np.random.randn(num_filters),
+        rbi = lambda name: self.bias(.2 * np.random.randn(num_filters),
                                            gen_id(name), for_conv=is_conv)
-        gwi = lambda name: self.weight(.1 * np.random.randn(num_filters),
+        rwi = lambda name: self.weight(.2 * np.random.randn(num_filters),
                                              gen_id(name), for_conv=is_conv)
 
 
@@ -508,98 +509,98 @@ class LadderAE():
         elif g_type == 'i':
             z_est = z_lat
 
-        elif g_type in ['sig']:
+        elif g_type in ['original', 'original+relu']:
             sigval = bi(0., 'c1') + wi(1., 'c2') * z_lat
             if u is not None:
                 sigval += wi(0., 'c3') * u + wi(0., 'c4') * z_lat * u
-            sigval = T.nnet.sigmoid(sigval)
+            sigval = (Trelu(sigval)
+                      if g_type.endswith('relu')
+                      else Tsigmoid(sigval))
 
             z_est = bi(0., 'a1') + wi(1., 'a2') * z_lat + wi(1., 'b1') * sigval
             if u is not None:
                 z_est += wi(0., 'a3') * u + wi(0., 'a4') * z_lat * u
 
-        elif g_type in ['sig_nomult']:
-            sigval = bi(0., 'c1') + wi(1., 'c2') * z_lat
+        elif g_type == 'original_rev':
+            sigval = bi(0., 'c1') + wi(0., 'c2') * z_lat
             if u is not None:
-                sigval += wi(0., 'c3') * u
+                sigval += wi(1., 'c3') * u + wi(0., 'c4') * z_lat * u
             sigval = T.nnet.sigmoid(sigval)
 
-            z_est = bi(0., 'a1') + wi(1., 'a2') * z_lat + wi(1., 'b1') * sigval
+            z_est = bi(0., 'a1') + wi(0., 'a2') * z_lat + wi(1., 'b1') * sigval
             if u is not None:
-                z_est += wi(0., 'a3') * u
+                z_est += wi(1., 'a3') * u + wi(0., 'a4') * z_lat * u
 
-        elif g_type in ['sig_gaussian']:
-            sigval = gbi('c1') + gwi('c2') * z_lat
+        elif g_type == 'original_rand':
+            sigval = rbi('c1') + rwi('c2') * z_lat
             if u is not None:
-                sigval += gwi('c3') * u + gwi('c4') * z_lat * u
+                sigval += rwi('c3') * u + rwi('c4') * z_lat * u
             sigval = T.nnet.sigmoid(sigval)
 
-            z_est = gbi('a1') + gwi('a2') * z_lat + gwi('b1') * sigval
+            z_est = rbi('a1') + rwi('a2') * z_lat + rwi('b1') * sigval
             if u is not None:
-                z_est += gwi('a3') * u + gwi('a4') * z_lat * u
+                z_est += rwi('a3') * u + rwi('a4') * z_lat * u
 
-        elif g_type in ['lin']:
-            a1 = wi(1.0, 'a1')
-            b = bi(0.0, 'b')
-
-            z_est = a1 * z_lat + b
-
-        elif g_type == 'simple':
-            z_est = (bi(0., 'a1') +
-                     wi(0., 'a3') * u +
-                     wi(1., 'a2') * z_lat +
-                     wi(0., 'a4') * z_lat * u)
-
-        elif g_type.startswith('fullmlp'):
-            # "fullmlp:5" number after colon specifies hidden unit
-            n_hidden = int(g_type[g_type.find(':') + 1:])
-
-            def get_rand_shareds(suffix, role=WEIGHT):
-                return [self.shared(np.random.randn(out_dim) / np.sqrt(out_dim), 
-                                    gen_id(suffix + str(i)), role=role) 
-                        for i in range(n_hidden)]
-
-            wz = get_rand_shareds('mini_wz')
-            wu = get_rand_shareds('mini_wu')
-            b = get_rand_shareds('mini_b', role=BIAS)
-            wout = get_rand_shareds('mini_wout')
-
-            z_est = None
-            for i in range(n_hidden):
-                z_tmp = wout[i] * self.apply_act(b[i] + wz[i] * z_lat + wu[i] * u, 'relu')
-                if z_est is None:
-                    z_est = z_tmp
-                else:
-                    z_est += z_tmp
-
-        elif g_type in ['relu']:
-            assert u is not None
-            b = bi(0., 'b')
-            x = u + b
-            z_est = self.apply_act(x, 'relu')
-
-        elif g_type in ['sigmoid']:
-            assert u is not None
-            b = bi(0., 'b')
-            c = wi(1., 'c')
-            z_est = self.apply_act((u + b) * c, 'sigmoid')
-
-        elif g_type in ['comparison_g2']:
-            # sig without the uz cross term
-            sigval = bi(0., 'c1') + wi(1., 'c2') * z_lat
+        elif g_type == 'lin':
+            z_est = bi(0., 'c1') + wi(1., 'c2') * z_lat
             if u is not None:
-                sigval += wi(0., 'c3') * u
-            sigval = T.nnet.sigmoid(sigval)
+                z_est += wi(0., 'c3') * u
 
-            z_est = bi(0., 'a1') + wi(1., 'a2') * z_lat + wi(1., 'b1') * sigval
-            if u is not None:
-                z_est += wi(0., 'a3') * u
-
-        elif g_type in ['comparison_g3']:
-            # sig without the sigmoid nonlinearity
+        elif g_type == 'lin+mult':
             z_est = bi(0., 'a1') + wi(1., 'a2') * z_lat
             if u is not None:
                 z_est += wi(0., 'a3') * u + wi(0., 'a4') * z_lat * u
+
+        elif g_type in ['lin+sig', 'lin+relu']:
+            sigval = bi(0., 'c1') + wi(1., 'c2') * z_lat
+            if u is not None:
+                sigval += wi(0., 'c3') * u
+            sigval = (Trelu(sigval)
+                      if g_type.endswith('relu')
+                      else Tsigmoid(sigval))
+
+            z_est = bi(0., 'a1') + wi(1., 'a2') * z_lat + wi(1., 'b1') * sigval
+            if u is not None:
+                z_est += wi(0., 'a3') * u
+
+
+        elif g_type.startswith('fullmlp'):
+            # "fullmlp_<hidden>_<nonlinear>_<initer>"
+            g_type = g_type.split('_')
+            n_hidden = int(g_type[1])
+            nonlinear = g_type[2]
+            if len(g_type) == 3:
+                # initialize z_lat weights to 1 and u weights to 0
+                initer = 'zeroone'
+            else:
+                initer = g_type[3]
+            
+            def get_rand_shareds(suffix, role=WEIGHT):
+                return [self.shared(.2 * np.random.randn(out_dim), 
+                                    gen_id(suffix + str(i)), role=role)
+                        for i in range(n_hidden)]
+
+            def get_const_shareds(suffix, const, role=WEIGHT):
+                return [self.shared(const * np.ones(out_dim), 
+                                    gen_id(suffix + str(i)), role=role)
+                        for i in range(n_hidden)]
+
+            if initer == 'rand':
+                wz = get_rand_shareds('mlp_wz')
+                wu = get_rand_shareds('mlp_wu')
+                b = get_rand_shareds('mlp_b', role=BIAS)
+                wo = get_rand_shareds('mlp_wo')
+            elif initer == 'zeroone':
+                wz = get_const_shareds('mlp_wz', 1)
+                wu = get_const_shareds('mlp_wu', 0)
+                b = get_const_shareds('mlp_b', 0, role=BIAS)
+                wo = get_const_shareds('mlp_wo', 1)
+
+            z_est = 0
+            for i in range(n_hidden):
+                z_est += wo[i] * Tnonlinear(nonlinear,
+                                    b[i] + wz[i] * z_lat + wu[i] * u)
+
 
         elif g_type in ['comparison_g4']:
             # No mixing between z_lat and u before final sum, otherwise similar

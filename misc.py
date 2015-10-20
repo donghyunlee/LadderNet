@@ -78,3 +78,16 @@ Tsoftplus = lambda x: T.log(1. + T.exp(x))
 Tsigmoid = lambda x: T.nnet.sigmoid(x)
 
 Tsoftmax = lambda x: T.nnet.softmax(x)
+
+def Tnonlinear(name, x):
+    act = {'relu': Trelu,
+     'sig': Tsigmoid,
+     'sigmoid': Tsigmoid,
+     'leakyrelu': Tleakyrelu,
+     'softplus': Tsoftplus,
+     'softmax': Tsoftmax}.get(name)
+
+    assert act, 'unknown nonlinearity: ' + name
+    if name == 'softmax':
+        x = x.flatten(2)
+    return act(x)
