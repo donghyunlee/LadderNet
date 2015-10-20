@@ -11,6 +11,7 @@ import theano.tensor as T
 import numpy as np
 import inspect
 import subprocess as pc
+import collections
 
 
 def json_load(filepath):
@@ -45,9 +46,13 @@ def nohup(cmd, log_files, verbose=True):
 
 
 def kill(pid):
-    if not isinstance(pid, str):
-        pid = str(pid)
-    pc.call('kill -9 ' + pid, shell=True)
+    if isinstance(pid, collections.Iterable):
+        for p in pid:
+            kill(p)
+    else:
+        if not isinstance(pid, str):
+            pid = str(pid)
+        pc.call('kill -9 ' + pid, shell=True)
 
 
 class AttributeDict(dict):
