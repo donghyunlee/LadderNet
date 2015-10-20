@@ -183,7 +183,11 @@ def prepare_dir(save_to, results_dir='results'):
     i = 0
 
     while True:
-        name = base + str(i)
+        if i == 0:
+            name = base
+        else:
+            name = '{}.{}'.format(base, i)
+
         try:
             os.makedirs(name)
             break

@@ -67,3 +67,14 @@ class JsonWriter(AttributeDict):
         AttributeDict.__init__(self, *args, **kwargs)
         self.update(json_load(json_file))
         
+        
+# =========== Theano specific ===========
+Trelu = lambda x: T.maximum(0, x)
+
+Tleakyrelu = lambda x: T.switch(x > 0., x, 0.1 * x)
+
+Tsoftplus = lambda x: T.log(1. + T.exp(x))
+
+Tsigmoid = lambda x: T.nnet.sigmoid(x)
+
+Tsoftmax = lambda x: T.nnet.softmax(x)
