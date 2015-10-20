@@ -37,6 +37,7 @@ from nn import ZCA, ContrastNorm
 from nn import ApproxTestMonitoring, FinalTestMonitoring, TestMonitoring
 from nn import LRDecay
 from ladder import LadderAE
+from misc import *
 
 
 class Whitening(Transformer):
@@ -263,6 +264,12 @@ def setup_data(p, test_set=False):
     # Then choose validation set from the remaining indices
     d.valid = train_set
     d.valid_ind = numpy.setdiff1d(all_ind, d.train_ind)[:p.valid_set_size]
+    # but make sure we have enough validation samples as requested
+    if len(d.valid_ind) < p.valid_set_size:
+        rng.shuffle(all_ind)
+        d.valid_ind = numpy.append(d.valid_ind, 
+                        all_ind[:p.valid_set_size - len(d.valid_ind)])
+    
     logger.info('Using %d examples for validation' % len(d.valid_ind))
 
     # Only touch test data if requested
@@ -491,7 +498,7 @@ def train(cli_params):
 
     # Get results
     df = main_loop.log.to_dataframe()
-    col = 'valid_final_error_rate_clean'
+    col = 'valid_final_error_rate'
     logger.info('%s %g' % (col, df[col].iloc[-1]))
 
     if main_loop.log.status['epoch_interrupt_received']:
