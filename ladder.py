@@ -566,6 +566,7 @@ class LadderAE():
 
         elif g_type.startswith('fullmlp'):
             # "fullmlp_<hidden>_<nonlinear>_<initer>"
+            # "fullmlp_<hidden>_<nonlinear>_rand+sigma"
             g_type = g_type.split('_')
             n_hidden = int(g_type[1])
             nonlinear = g_type[2]
@@ -575,8 +576,16 @@ class LadderAE():
             else:
                 initer = g_type[3]
             
+            if initer.startswith('rand'):
+                initer = initer.split('+')
+                if len(initer) == 1:
+                    rand_sigma = .05
+                else:
+                    rand_sigma = float(initer[1])
+                initer = 'rand'
+            
             def get_rand_shareds(suffix, role=WEIGHT):
-                return [self.shared(.05 * np.random.randn(out_dim), 
+                return [self.shared(rand_sigma * np.random.randn(out_dim), 
                                     gen_id(suffix + str(i)), role=role)
                         for i in range(n_hidden)]
 
