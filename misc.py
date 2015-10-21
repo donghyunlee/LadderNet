@@ -5,6 +5,7 @@ import os
 import sys
 import json
 import functools
+import os.path
 from os.path import join as ojoin
 import theano as th
 import theano.tensor as T
@@ -12,6 +13,9 @@ import numpy as np
 import inspect
 import subprocess as pc
 import collections
+
+
+file_exists = os.path.isfile
 
 
 def json_load(filepath):
