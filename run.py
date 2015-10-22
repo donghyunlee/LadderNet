@@ -183,7 +183,7 @@ def setup_model(p):
 
     # Load parameters if requested
     if p.get('load_from'):
-        trained_params = ojoin(p.load_from, 'trained_params.npz')
+        trained_params = ojoin(p.load_from, 'trained_params_best.npz')
 #         trained_params = ojoin(p.load_from, 'trained_params_best.npz')
 #         if not file_exists(trained_params):
 #             trained_params = ojoin(p.load_from, 'trained_params.npz')

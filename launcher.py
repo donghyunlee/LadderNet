@@ -29,7 +29,8 @@ for gpu in sys.argv[1:]:
     print out
     print '-' * 20
 
-    logs.append(fullgpu + '\n' + out.strip())
+    logs.append('=============== ' + fullgpu + '===============\n' 
+                + out.strip())
 
 
 logfile = datetime.now().strftime('ainz_%m-%d.%H:%M:%S.txt')
