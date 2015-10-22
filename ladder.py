@@ -595,9 +595,16 @@ class LadderAE():
                 wu = get_rand_shareds('mlp_wu')
                 b = get_rand_shareds('mlp_b', role=BIAS)
                 wo = get_rand_shareds('mlp_wo')
-            elif initer == 'zeroone' or initer == 'onezero':
-                wz = get_const_shareds('mlp_wz', 1./n_hidden)
-                wu = get_const_shareds('mlp_wu', 0)
+            elif initer == 'zeroone' or initer == 'zerone' or initer == 'onezero':
+                # vertical connection (u) set to 0
+                if initer.startswith('zero'):
+                    wz = get_const_shareds('mlp_wz', 1./n_hidden)
+                    wu = get_const_shareds('mlp_wu', 0)
+                # vertical connection (u) set to 1
+                else:
+                    wz = get_const_shareds('mlp_wz', 0)
+                    wu = get_const_shareds('mlp_wu', 1./n_hidden)
+
                 b = get_const_shareds('mlp_b', 0, role=BIAS)
                 wo = get_const_shareds('mlp_wo', 1./n_hidden)
 
