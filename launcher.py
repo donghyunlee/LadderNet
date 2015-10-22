@@ -33,7 +33,7 @@ for gpu in sys.argv[1:]:
                 + out.strip())
 
 
-logfile = datetime.now().strftime('ainz_%m-%d.%H:%M:%S.txt')
+logfile = datetime.now().strftime('ainz/ainz_%m-%d.%H:%M:%S.txt')
 
 print >> open(logfile, 'w'), '\n\n'.join(logs)
 

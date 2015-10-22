@@ -28,6 +28,8 @@ if __name__ == '__main__':
     curves = parse_log(ojoin(sys.argv[1], 'log.txt'), 
                        ['valid_approx_cost_class_corr', 
                         'valid_approx_error_rate'])
-    _, valid_i = min_at(curves[0])
-    print min_at(curves[1])[0]
-    print curves[1][valid_i]
+    valid_cost, valid_i = min_at(curves[0])
+    print 'epochs:\t\t', len(curves[0])
+    print 'min cost:\t', valid_cost
+    print 'ER at min cost:\t', curves[1][valid_i]
+    print 'min ER:\t\t', min(curves[1])

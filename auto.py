@@ -10,39 +10,38 @@ SPEC = {}
 
 # pretoria
 SPEC['pre'] = [
-               ('fullmlp_2_relu_rand+0.1', '100'), 
-               ('fullmlp_2_relu_rand+0.3', '100'), 
-               ('fullmlp_2_relu_rand+0.5', '100'), 
-               ('fullmlp_2_relu_rand+0.01', '100')
+               ('fullmlp_2_relu_rand+0.03', '100'), 
+               ('fullmlp_2_relu_rand+0.05', '100'), 
+               ('fullmlp_2_relu_rand+0.03', '1000'), 
+               ('fullmlp_2_relu_rand+0.05', '1000')
                ]
 
 # kathmandu
 SPEC['kat'] = [
-               ('fullmlp_2_relu_rand+0.1', '1000'), 
-               ('fullmlp_2_relu_rand+0.3', '1000'), 
-               ('fullmlp_2_relu_rand+0.01', '1000')
+               ('fullmlp_3_relu_rand+0.03', '100'), 
+               ('fullmlp_3_relu_rand+0.05', '100'), 
+               ('fullmlp_3_relu_rand+0.03', '1000'), 
+               ('fullmlp_3_relu_rand+0.05', '1000')
                ]
 
 # baghdad
 SPEC['bag'] = [
-               ('fullmlp_2_relu_zeroone', '100'), 
-               ('fullmlp_2_relu_zeroone', '1000')
+               ('fullmlp_3_relu_zeroone', '100'), 
+               ('fullmlp_3_relu_zeroone', '1000')
                ]
 
 # budapest
 SPEC['bud'] = [
-               ('fullmlp_2_relu_rand', '100'), 
-               ('fullmlp_3_relu_rand', '100'), 
-               ('original', '1000'), 
-               ('original_rand', '1000')
+               ('fullmlp_4_relu_rand+0.03', '100'), 
+               ('fullmlp_4_relu_rand+0.05', '100'), 
+               ('fullmlp_4_relu_rand+0.03', '1000'), 
+               ('fullmlp_4_relu_rand+0.05', '1000')
                ]
 
 # damascus
 SPEC['dam'] = [
-               ('lin+mult', '1000'), 
-               ('lin+sig', '1000'), 
-               ('fullmlp_2_sig_rand', '1000'), 
-               ('fullmlp_3_sig_rand', '1000')
+               ('fullmlp_2_relu_onezero', '100'), 
+               ('fullmlp_2_relu_onezero', '1000')
                ]
 
 # lisbon
