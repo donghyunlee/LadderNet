@@ -1,6 +1,7 @@
 import subprocess as pc
 from datetime import datetime
 import sys
+import os.path
 
 logs = []
 
@@ -32,8 +33,10 @@ for gpu in sys.argv[1:]:
     logs.append('=============== ' + fullgpu + '===============\n' 
                 + out.strip())
 
+if not os.path.exists('ainz'):
+    os.makedirs('ainz')
 
-logfile = datetime.now().strftime('ainz/ainz_%m-%d.%H:%M:%S.txt')
+logfile = datetime.now().strftime('ainz/%m-%d.%H:%M:%S.txt')
 
 print >> open(logfile, 'w'), '\n\n'.join(logs)
 
