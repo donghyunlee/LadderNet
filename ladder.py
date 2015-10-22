@@ -570,11 +570,7 @@ class LadderAE():
             g_type = g_type.split('_')
             n_hidden = int(g_type[1])
             nonlinear = g_type[2]
-            if len(g_type) == 3:
-                # initialize z_lat weights to 1 and u weights to 0
-                initer = 'zeroone'
-            else:
-                initer = g_type[3]
+            initer = g_type[3]
             
             if initer.startswith('rand'):
                 initer = initer.split('+')
@@ -599,7 +595,7 @@ class LadderAE():
                 wu = get_rand_shareds('mlp_wu')
                 b = get_rand_shareds('mlp_b', role=BIAS)
                 wo = get_rand_shareds('mlp_wo')
-            elif initer == 'zeroone':
+            elif initer == 'zeroone' or initer == 'onezero':
                 wz = get_const_shareds('mlp_wz', 1./n_hidden)
                 wu = get_const_shareds('mlp_wu', 0)
                 b = get_const_shareds('mlp_b', 0, role=BIAS)
