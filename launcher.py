@@ -18,7 +18,14 @@ fullnames = {
 for sshstr in open('/Users/Eona/CLIC/tools/clicssh.txt'):
     pass
 
-for gpu in sys.argv[1:]:
+if sys.argv[1] == 'all':
+    gpus = fullnames.keys()
+    # lisbon currently down
+    gpus.remove('lis')
+else:
+    gpus = sys.argv[1:]
+
+for gpu in gpus:
     fullgpu = fullnames[gpu]
     print 'Launching', fullgpu, '...\n'
 

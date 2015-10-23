@@ -35,16 +35,23 @@ def debugprint(*varnames):
         print name, '==]', eval(name,frame.f_globals,frame.f_locals)
         
         
-def nohup(cmd, log_files, verbose=True):
+def nohup(cmd, log_files, verbose=True, dryrun=False):
     if isinstance(log_files, str):
         outlog, errlog = log_files, '&1' # 2>&1
     else:
         outlog, errlog = log_files
         
+    if dryrun:
+        print 'Dry run:'
+        
     cmd = 'nohup python -u {} > {} 2>{} &'.format(cmd, outlog, errlog)
     if verbose:
         print cmd
         
+    # don't actually run anything
+    if dryrun:
+        return
+
     # dollar-bang gets the PID of the last backgrounded process
     return pc.check_output(cmd + ' echo $!', shell=True).strip()
 
