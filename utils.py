@@ -11,7 +11,7 @@ from blocks.roles import add_role
 
 logger = logging.getLogger('main.utils')
 
-# ============== Theano generic utils ==============
+# ============== My addition ==============
 import theano as th
 import theano.tensor as T
 
@@ -37,6 +37,17 @@ def Tnonlinear(name, x):
     if name == 'softmax':
         x = x.flatten(2)
     return act(x)
+
+
+class SentinelWhenFinish(SimpleExtension):
+    """When finished, write out to a sentinel file."""
+    def __init__(self, sentinel, **kwargs):
+        kwargs['after_training'] = True
+        super(SentinelWhenFinish, self).__init__(**kwargs)
+        self.sentinel = sentinel
+
+    def do(self, which_callback, *args):
+        print >> open(self.sentinel, 'w'), 'finished'
 # ==================================================
 
 

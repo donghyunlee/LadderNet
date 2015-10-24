@@ -455,6 +455,9 @@ def train(cli_params):
         model=model,
         extensions=[
             FinishAfter(after_n_epochs=p.num_epochs),
+            
+            # write out to sentinel file for experiment automator to work
+            SentinelWhenFinish(sentinel=ojoin(p.save_dir, 'sentinel.txt')),
 
             # This will estimate the validation error using
             # running average estimates of the batch normalization
