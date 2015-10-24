@@ -109,6 +109,13 @@ class Emailer(object):
         self.recv_email = recv_email
         self.passwd = passwd
         self.smtp_addr = smtp_addr
+        
+        # under debug mode, doesn't send any email
+        self._debug = False
+    
+    
+    def set_debug(self, debug):
+        self._debug = debug
     
 
     def send_multiple(self, *messages):
@@ -116,29 +123,36 @@ class Emailer(object):
         Send multiple emails.
         Each msg is a tuple (subject, bodytext)
         '''
-        server = smtplib.SMTP(self.smtp_addr, 587)
-        server.ehlo()
-        server.starttls()
-        server.login(self.sender_email, self.passwd)
+        try:
+            server = smtplib.SMTP(self.smtp_addr, 587)
+            server.ehlo()
+            server.starttls()
+            server.login(self.sender_email, self.passwd)
 
-        for msgtuple in messages:
-            if type(msgtuple) != tuple or len(msgtuple) != 2:
-                raise Exception(
-                    "Each message must be a tuple (subject, bodytext)")
-            
-            subject, textbody = msgtuple
-            msg = MIMEText(textbody)
-            
-            msg['Subject'] = subject
-            msg['From'] = formataddr((self.sender_name, self.sender_email))
-            msg['To'] = self.recv_email
-            
-            server.sendmail(self.sender_email, 
-                            [self.recv_email], 
-                            msg.as_string())
+            for msgtuple in messages:
+                if type(msgtuple) != tuple or len(msgtuple) != 2:
+                    raise Exception(
+                        "Each message must be a tuple (subject, bodytext)")
+                
+                subject, textbody = msgtuple
+                msg = MIMEText(textbody)
+                
+                msg['Subject'] = subject
+                msg['From'] = formataddr((self.sender_name, self.sender_email))
+                msg['To'] = self.recv_email
+                msg = msg.as_string()
+                
+                if self._debug:
+                    print '======== [Emailer debug msg] ========'
+                    print msg
+                    print '======== [end msg] ========\n'
+                else:
+                    server.sendmail(self.sender_email, [self.recv_email], msg)
 
-        server.quit()
-    
+            server.quit()
+
+        except Exception, e:
+            print '[Emailer error]:', str(e)
 
     def send(self, subject, textbody):
         self.send_multiple((subject, textbody))
@@ -149,7 +163,8 @@ if __name__ == '__main__':
     email_info = map(str.strip, open('email_info.txt').readlines())
     
     emailer = Emailer(*email_info)
-
+    emailer.set_debug(True)
+    
     emailer.send_multiple(('Magic 1', 'Royal Flush'),
                           ('Magic 2', 'Infinity Typist'),
                           ('Magic 3', 'Priestess of Theano'))
