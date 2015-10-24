@@ -216,21 +216,26 @@ class SaveLog(SimpleExtension):
             logger.info(str(element) + ":%f" % current_row[element])
 
 
-def prepare_dir(save_to, results_dir='results'):
+def prepare_dir(save_to, results_dir='results', override=True):
     base = os.path.join(results_dir, save_to)
     i = 0
 
-    while True:
-        if i == 0:
-            name = base
-        else:
-            name = '{}.{}'.format(base, i)
+    name = base
+    if override:
+        if file_exists(name):
+            shutil.rmtree(name)
 
-        try:
-            os.makedirs(name)
-            break
-        except:
-            i += 1
+        os.makedirs(name)
+    else:
+        while True:
+            if i > 0:
+                name = '{}.{}'.format(base, i)
+
+            if file_exists(name):
+                i += 1
+            else:
+                os.makedirs(name)
+                break
 
     return name
 

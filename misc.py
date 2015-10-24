@@ -7,6 +7,8 @@ import json
 import functools
 import os.path
 from os.path import join as ojoin
+from os.path import isfile, isdir
+import shutil
 import numpy as np
 import inspect
 import subprocess as pc
@@ -15,7 +17,7 @@ from time import sleep
 from copy import deepcopy
 
 
-file_exists = os.path.isfile
+file_exists = os.path.exists
 
 
 def file_time(fname):
