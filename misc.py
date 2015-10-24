@@ -18,6 +18,10 @@ from copy import deepcopy
 file_exists = os.path.isfile
 
 
+def file_time(fname):
+    return str(os.path.getctime(fname))
+
+
 def json_load(filepath):
     with open(filepath, 'r') as fp:
         return json.load(fp)
@@ -44,7 +48,7 @@ def nohup(cmd, log_files, verbose=True, dryrun=False):
     if dryrun:
         print 'Dry run:'
         
-    cmd = 'nohup python -u {} > {} 2>{} &'.format(cmd, outlog, errlog)
+    cmd = 'nohup {} > {} 2>{} &'.format(cmd, outlog, errlog)
     if verbose:
         print cmd
         
@@ -54,6 +58,10 @@ def nohup(cmd, log_files, verbose=True, dryrun=False):
 
     # dollar-bang gets the PID of the last backgrounded process
     return pc.check_output(cmd + ' echo $!', shell=True).strip()
+
+
+def nohup_py(cmd, *args, **kwargs):
+    return nohup('python -u {}'.format(cmd), *args, **kwargs)
 
 
 def kill(pid):
