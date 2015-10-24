@@ -4,44 +4,52 @@ Automate experiment launching
 from misc import *
 import time
 
-KEYS = ['decoder', 'labelled']
+KEYS = ['decoder', 'labelled', 'dseed']
+DSEEDS = [777, 1, 405, 186, 620, 209, 172, 734, 154, 996]
 
 SPEC = {}
 
 # pretoria
 SPEC['pre'] = [
-               ('fullmlp_2_relu_rand+0.03', '100'), 
-               ('fullmlp_2_relu_rand+0.05', '100'), 
-               ('fullmlp_2_relu_rand+0.03', '1000'), 
-               ('fullmlp_2_relu_rand+0.05', '1000')
+               ('fullmlp_2_relu_rand+0.03', 100, 1), 
+               ('fullmlp_2_relu_rand+0.03', 100, 2),
+               ('fullmlp_2_relu_rand+0.03', 100, 3),
+               ('fullmlp_2_relu_rand+0.03', 100, 4),
+               ('fullmlp_2_relu_rand+0.03', 100, 5)
                ]
 
 # kathmandu
 SPEC['kat'] = [
-               ('fullmlp_3_relu_rand+0.03', '100'), 
-               ('fullmlp_3_relu_rand+0.05', '100'), 
-               ('fullmlp_3_relu_rand+0.03', '1000'), 
-               ('fullmlp_3_relu_rand+0.05', '1000')
+               ('fullmlp_2_relu_rand+0.03', 100, 6), 
+               ('fullmlp_2_relu_rand+0.03', 100, 7),
+               ('fullmlp_2_relu_rand+0.03', 100, 8),
+               ('fullmlp_2_relu_rand+0.03', 100, 9),
+               ('fullmlp_2_relu_rand+0.05', 1000, 1)
                ]
 
 # baghdad
 SPEC['bag'] = [
-               ('fullmlp_3_relu_zeroone', '100'), 
-               ('fullmlp_3_relu_zeroone', '1000')
+               ('fullmlp_2_relu_rand+0.05', 1000, 2),
+               ('fullmlp_2_relu_rand+0.05', 1000, 3),
+               ('fullmlp_2_relu_rand+0.05', 1000, 4),
+               ('fullmlp_2_relu_rand+0.05', 1000, 5),
+               ('fullmlp_2_relu_rand+0.05', 1000, 6)
                ]
 
 # budapest
 SPEC['bud'] = [
-               ('fullmlp_4_relu_rand+0.03', '100'), 
-               ('fullmlp_4_relu_rand+0.05', '100'), 
-               ('fullmlp_4_relu_rand+0.03', '1000'), 
-               ('fullmlp_4_relu_rand+0.05', '1000')
+               ('fullmlp_2_relu_rand+0.05', 1000, 7),
+               ('fullmlp_2_relu_rand+0.05', 1000, 8),
+               ('fullmlp_2_relu_rand+0.05', 1000, 9),
+               ('fullmlp_3_relu_rand+0.03', 100, 1),
+               ('fullmlp_3_relu_rand+0.03', 100, 2)
                ]
 
 # damascus
 SPEC['dam'] = [
-               ('fullmlp_2_relu_onezero', '100'), 
-               ('fullmlp_2_relu_onezero', '1000')
+               ('fullmlp_3_relu_rand+0.03', 100, 3),
+               ('fullmlp_3_relu_rand+0.03', 100, 4),
+               ('fullmlp_3_relu_rand+0.03', 100, 5)
                ]
 
 # lisbon
@@ -52,7 +60,8 @@ def automate(specs):
         setting = AttributeDict({k: s for k, s in zip(KEYS, spec)})
 
         # extra derived settings
-        setting.dir = setting.decoder + '-' + setting.labelled
+        setting.dseed = DSEEDS[setting.dseed]
+        setting.dir = '{decoder}-{labelled}@{dseed}'.format(**setting)
         setting.seed = int(time.time()*100000 % 100000)
     
         pid = nohup('run.py train {dir} '
@@ -62,9 +71,10 @@ def automate(specs):
             '--labeled-samples {labelled} '
             '--unlabeled-samples 60000 '
             '--num-epochs 150 '
-            '--dseed 777 ' # shouldn't change across experiments
+            '--dseed {dseed} ' # shouldn't change across experiments
             '--seed {seed}'.format(**setting),
-            'logs/{dir}.txt'.format(**setting))
+            'logs/{dir}.txt'.format(**setting),
+            dryrun=False)
 
         print spec, ' PID =', pid, '\n'
     

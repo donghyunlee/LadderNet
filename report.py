@@ -9,7 +9,7 @@ def parse_log(path, keyvars):
     for line in open(path):
         colon_index = line.find(":")
         if colon_index != -1:
-            key = line[:colon_index]
+            key = line[:colon_index].strip()
             if key in keyvars:
                 value = float(line[colon_index + 1:])
                 if key in results:
@@ -25,7 +25,11 @@ def min_at(values):
 
 
 if __name__ == '__main__':
-    curves = parse_log(ojoin(sys.argv[1], 'log.txt'), 
+    logfile = sys.argv[1]
+    if not logfile.endswith('.txt'):
+        logfile = ojoin(logfile, 'log.txt')
+
+    curves = parse_log(logfile,
                        ['valid_approx_cost_class_corr', 
                         'valid_approx_error_rate'])
     valid_cost, valid_i = min_at(curves[0])
