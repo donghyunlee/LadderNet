@@ -25,19 +25,6 @@ class Experiment(object):
             return 'nonexist'
         
     
-    def check_update_status(self):
-        '''
-        sentinel_info change or not
-        '''
-        sentinel_info = self._sentinel_info()
-        if self._last_sentinel != sentinel_info:
-            self._last_sentinel = sentinel_info
-            self._status = 'ended'
-            return True
-        else:
-            return False
-    
-    
     def launch(self, verbose=True, dryrun=False):
         self._pid = nohup(self.command, self.logfile, verbose, dryrun)
         if self._pid is not None:
@@ -46,12 +33,23 @@ class Experiment(object):
     
     def kill(self):
         kill(self._pid)
-        self._status = 'ended'
+        if self._status in ['running']:
+            self._status = 'killed'
 
     
     @property
     def status(self):
+        # if sentinel file changes, it means experiment has ended
+        sentinel_info = self._sentinel_info()
+        if self._last_sentinel != sentinel_info:
+            self._last_sentinel = sentinel_info
+            self._status = 'ended'
+
         return self._status
+    
+    
+    def is_done(self):
+        return self._status in ['ended', 'killed']
         
     
     @property
