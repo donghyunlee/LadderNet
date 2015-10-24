@@ -12,6 +12,7 @@ import inspect
 import subprocess as pc
 import collections
 from time import sleep
+from copy import deepcopy
 
 
 file_exists = os.path.isfile
@@ -80,3 +81,65 @@ class JsonWriter(AttributeDict):
         AttributeDict.__init__(self, *args, **kwargs)
         self.update(json_load(json_file))
         
+
+# ========== email notification ==========
+import smtplib
+from email.mime.text import MIMEText
+from email.utils import formataddr
+
+class Emailer(object):
+    
+    def __init__(self, sender_name, 
+                 sender_email, 
+                 recv_email, 
+                 passwd,
+                 smtp_addr):
+        self.sender_name = sender_name
+        self.sender_email = sender_email
+        self.recv_email = recv_email
+        self.passwd = passwd
+        self.smtp_addr = smtp_addr
+    
+
+    def send_multiple(self, *messages):
+        '''
+        Send multiple emails.
+        Each msg is a tuple (subject, bodytext)
+        '''
+        server = smtplib.SMTP(self.smtp_addr, 587)
+        server.ehlo()
+        server.starttls()
+        server.login(self.sender_email, self.passwd)
+
+        for msgtuple in messages:
+            if type(msgtuple) != tuple or len(msgtuple) != 2:
+                raise Exception(
+                    "Each message must be a tuple (subject, bodytext)")
+            
+            subject, textbody = msgtuple
+            msg = MIMEText(textbody)
+            
+            msg['Subject'] = subject
+            msg['From'] = formataddr((self.sender_name, self.sender_email))
+            msg['To'] = self.recv_email
+            
+            server.sendmail(self.sender_email, 
+                            [self.recv_email], 
+                            msg.as_string())
+
+        server.quit()
+    
+
+    def send(self, subject, textbody):
+        self.send_multiple((subject, textbody))
+            
+
+if __name__ == '__main__':
+    # each line corresponds to Emailer __init__ args
+    email_info = map(str.strip, open('email_info.txt').readlines())
+    
+    emailer = Emailer(*email_info)
+
+    emailer.send_multiple(('Magic 1', 'Royal Flush'),
+                          ('Magic 2', 'Infinity Typist'),
+                          ('Magic 3', 'Priestess of Theano'))
