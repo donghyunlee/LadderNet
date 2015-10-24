@@ -32,7 +32,7 @@ for gpu in gpus:
     out = pc.check_output((sshstr.strip() + 
     " 'cd ~/workspace/LadderNet && "
     ". ~/workspace/bin/activate && "
-    "python auto.py {}'").format(fullgpu, gpu), shell=True)
+    "python launch_single.py {}'").format(fullgpu, gpu), shell=True)
     
     print out
     print '-' * 20

@@ -11,45 +11,44 @@ SPEC = {}
 
 # pretoria
 SPEC['pre'] = [
-               ('fullmlp_2_relu_rand+0.03', 100, 1), 
-               ('fullmlp_2_relu_rand+0.03', 100, 2),
-               ('fullmlp_2_relu_rand+0.03', 100, 3),
-               ('fullmlp_2_relu_rand+0.03', 100, 4),
-               ('fullmlp_2_relu_rand+0.03', 100, 5)
+               ('fullmlp_3_relu_rand+0.03', 100, 6), 
+               ('fullmlp_3_relu_rand+0.03', 100, 7),
+               ('fullmlp_3_relu_rand+0.03', 100, 8),
+               ('fullmlp_3_relu_rand+0.03', 100, 9),
+               ('fullmlp_4_relu_rand+0.05', 100, 1)
                ]
 
 # kathmandu
 SPEC['kat'] = [
-               ('fullmlp_2_relu_rand+0.03', 100, 6), 
-               ('fullmlp_2_relu_rand+0.03', 100, 7),
-               ('fullmlp_2_relu_rand+0.03', 100, 8),
-               ('fullmlp_2_relu_rand+0.03', 100, 9),
-               ('fullmlp_2_relu_rand+0.05', 1000, 1)
+               ('fullmlp_4_relu_rand+0.05', 100, 2),
+               ('fullmlp_4_relu_rand+0.05', 100, 3),
+               ('fullmlp_4_relu_rand+0.05', 100, 4),
+               ('fullmlp_4_relu_rand+0.05', 100, 5),
+               ('fullmlp_4_relu_rand+0.05', 100, 6)
                ]
 
 # baghdad
 SPEC['bag'] = [
-               ('fullmlp_2_relu_rand+0.05', 1000, 2),
-               ('fullmlp_2_relu_rand+0.05', 1000, 3),
-               ('fullmlp_2_relu_rand+0.05', 1000, 4),
-               ('fullmlp_2_relu_rand+0.05', 1000, 5),
-               ('fullmlp_2_relu_rand+0.05', 1000, 6)
+               ('fullmlp_4_relu_rand+0.05', 100, 7),
+               ('fullmlp_4_relu_rand+0.05', 100, 8),
+               ('fullmlp_4_relu_rand+0.05', 100, 9),
+               ('fullmlp_4_relu_rand+0.03', 1000, 1),
+               ('fullmlp_4_relu_rand+0.03', 1000, 2)
                ]
 
 # budapest
 SPEC['bud'] = [
-               ('fullmlp_2_relu_rand+0.05', 1000, 7),
-               ('fullmlp_2_relu_rand+0.05', 1000, 8),
-               ('fullmlp_2_relu_rand+0.05', 1000, 9),
-               ('fullmlp_3_relu_rand+0.03', 100, 1),
-               ('fullmlp_3_relu_rand+0.03', 100, 2)
+               ('fullmlp_4_relu_rand+0.03', 1000, 3),
+               ('fullmlp_4_relu_rand+0.03', 1000, 4),
+               ('fullmlp_4_relu_rand+0.03', 1000, 5),
+               ('fullmlp_4_relu_rand+0.03', 1000, 6),
                ]
 
 # damascus
 SPEC['dam'] = [
-               ('fullmlp_3_relu_rand+0.03', 100, 3),
-               ('fullmlp_3_relu_rand+0.03', 100, 4),
-               ('fullmlp_3_relu_rand+0.03', 100, 5)
+               ('fullmlp_4_relu_rand+0.03', 1000, 7),
+               ('fullmlp_4_relu_rand+0.03', 1000, 8),
+               ('fullmlp_4_relu_rand+0.03', 1000, 9)
                ]
 
 # lisbon
