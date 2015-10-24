@@ -15,6 +15,7 @@ import subprocess as pc
 import collections
 from time import sleep
 from copy import deepcopy
+import random
 
 
 file_exists = os.path.exists
@@ -38,7 +39,7 @@ def debugprint(*varnames):
     record=inspect.getouterframes(inspect.currentframe())[1]
     frame=record[0]
     for name in varnames:
-        print name, '==]', eval(name,frame.f_globals,frame.f_locals)
+        print name, '==>', eval(name,frame.f_globals,frame.f_locals)
         
         
 def nohup(cmd, log_files, verbose=True, dryrun=False):

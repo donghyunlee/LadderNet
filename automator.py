@@ -56,7 +56,7 @@ class Experiment(object):
     
     
     def is_done(self):
-        return self._status in ['ended', 'crashed', 'killed']
+        return self.status in ['ended', 'crashed', 'killed']
         
     
     @property
@@ -66,6 +66,10 @@ class Experiment(object):
     
     def __str__(self):
         return str(self.spec)
+    
+    def __repr__(self):
+        return "Exper {}".format(str(self))
+#         return self.spec[0]
     
     
 class EmailReporter(object):
@@ -133,14 +137,20 @@ class ExperimentManager(object):
     
     def __init__(self, expers, 
                  concur_limit=4, 
+                 check_period=1,
                  email_reporter=None):
         self.expers = expers
         # maximum number of concurrent experiments
         self.concur_limit = concur_limit
+        # check per seconds
+        self.check_period = check_period
         self.email_reporter = email_reporter
         
-        # experiment queue
-        self.queue = expers[:]
+        # experiment yet to be launched
+        self.wait_queue = expers[:]
+        # experiment already launched and !is_done()
+        self.running_queue = []
+
         # finished experiments
         self.num_ended = 0
         # all experiments
@@ -151,8 +161,8 @@ class ExperimentManager(object):
         try:
             self._launch_n(self.concur_limit)
 
-            while self.queue:
-                sleep(1) # check period
+            while self.wait_queue or self.running_queue:
+                sleep(self.check_period)
                 num_ended = self._update_queue()
                 # keep fixed number of expers running
                 self._launch_n(num_ended)
@@ -160,33 +170,36 @@ class ExperimentManager(object):
             # send any remaining experiment reports
             self.email_reporter.flush_send()
             
+            print 'All experiments completed.'
+            
         except KeyboardInterrupt:
-            print 'ExperimentManager interrupted.'
-            print 'Killing all experiments.'
-            for exper in self.expers:
+            print '\n\nExperimentManager interrupted.'
+            print 'Kill all running experiments:\n'
+            for exper in self.running_queue:
                 exper.kill()
                 print exper.pid, 'killed'
     
     
     def _launch_n(self, num_exper):
         # launch n processes from queue head
-        for exper in self.queue[:num_exper]:
+        for exper in self.wait_queue[:num_exper]:
             exper.launch()
-
-        del self.queue[:num_exper]
+            self.running_queue.append(exper)
+        
+        del self.wait_queue[:num_exper]
 
     
     def _update_queue(self):
-        # return number of ended expers and remove them from self.queue
+        # return number of ended expers and remove them from self.running_queue
         newqueue = []
         num_ended = 0
-        for exper in self.queue:
+        for exper in self.running_queue:
             if exper.is_done():
                 num_ended += 1
-                print exper, 'done with status', exper.status
+                print exper, 'exits with status "{}"'.format(exper.status)
                 self.email_reporter.enqueue(exper)
             else:
                 newqueue.append(exper)
 
-        self.queue = newqueue
+        self.running_queue = newqueue
         return num_ended
