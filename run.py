@@ -511,9 +511,18 @@ def train(cli_params):
         return None
     return df
 
+
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
 
+    # remove annoying Theano lock dir
+    try:
+        # contains string "rm -rf <theano_lockdir>"
+        pc.call(open('lockdir_info.txt').read().strip(), shell=True)
+    except:
+        # ignore any error
+        pass
+    
     rep = lambda s: s.replace('-', ',')
     chop = lambda s: s.split(',')
     to_int = lambda ss: [int(s) for s in ss if s.isdigit()]
@@ -628,27 +637,40 @@ if __name__ == "__main__":
         logger.error('Subprocess returned %s' % err.strip())
 
     t_start = time.time()
-    if args.cmd == 'evaluate':
-        for k, v in vars(args).iteritems():
-            if type(v) is list:
-                assert len(v) == 1, "should not be a list when loading: %s" % k
-                logger.info("%s" % str(v[0]))
-                vars(args)[k] = v[0]
+    
+    # if failure, write to sentinel file
+    try:
+        
+        if args.cmd == 'evaluate':
+            for k, v in vars(args).iteritems():
+                if type(v) is list:
+                    assert len(v) == 1, "should not be a list when loading: %s" % k
+                    logger.info("%s" % str(v[0]))
+                    vars(args)[k] = v[0]
 
-        err = get_error(vars(args))
-        logger.info('Test error: %f' % err)
+            err = get_error(vars(args))
+            logger.info('Test error: %f' % err)
 
-    elif args.cmd == "train":
-        listdicts = {k: v for k, v in vars(args).iteritems() if type(v) is list}
-        therest = {k: v for k, v in vars(args).iteritems() if type(v) is not list}
+        elif args.cmd == "train":
+            listdicts = {k: v for k, v in vars(args).iteritems() if type(v) is list}
+            therest = {k: v for k, v in vars(args).iteritems() if type(v) is not list}
 
-        gen1, gen2 = tee(product(*listdicts.itervalues()))
+            gen1, gen2 = tee(product(*listdicts.itervalues()))
 
-        l = len(list(gen1))
-        for i, d in enumerate(dict(izip(listdicts, x)) for x in gen2):
-            if l > 1:
-                logger.info('Training configuration %d / %d' % (i+1, l))
-            d.update(therest)
-            if train(d) is None:
-                break
+            l = len(list(gen1))
+            for i, d in enumerate(dict(izip(listdicts, x)) for x in gen2):
+                if l > 1:
+                    logger.info('Training configuration %d / %d' % (i+1, l))
+                d.update(therest)
+                if train(d) is None:
+                    break
+    
+    except Exception, e:
+        print '================== CRASHED =================='
+        print str(e)
+        sentinel_file = ojoin('results', args.save_to, 'sentinel.txt')
+        print >> open(sentinel_file, 'w'), 'crashed'
+        
+        sys.exit(1)
+        
     logger.info('Took %.1f minutes' % ((time.time() - t_start) / 60.))
