@@ -11,6 +11,7 @@ import numpy as np
 import inspect
 import subprocess as pc
 import collections
+from time import sleep
 
 
 file_exists = os.path.isfile
@@ -55,6 +56,9 @@ def nohup(cmd, log_files, verbose=True, dryrun=False):
 
 
 def kill(pid):
+    if pid is None:
+        return
+    
     if isinstance(pid, collections.Iterable):
         for p in pid:
             kill(p)
