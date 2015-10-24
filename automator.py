@@ -47,9 +47,10 @@ class Experiment(object):
     
     @property
     def status(self):
-        sentinel_info = self._sentinel_info()
-        if sentinel_info and self._status != 'killed':
-            self._status = sentinel_info
+        if self._pid is not None:
+            sentinel_info = self._sentinel_info()
+            if sentinel_info and self._status != 'killed':
+                self._status = sentinel_info
 
         return self._status
     
@@ -63,13 +64,129 @@ class Experiment(object):
         return self._pid
     
     
-class ExperimentManager(object):
+    def __str__(self):
+        return str(self.spec)
     
-    def __init__(self, experiments):
-        self.experiments = experiments
-        # experiment queue
-        self.queue = experiments[:]
+    
+class EmailReporter(object):
+    """
+    Specify how to send email when an experiment ends
+    """
+    def __init__(self, emailer, 
+                 concur_email = 3,
+                 subject_gen = None,
+                 bodytext_gen = None):
+        self.emailer = emailer
+        # number of experiments per email report
+        self.concur_email = concur_email
+        
+        # lambda [Experiments]: "email subject"
+        if subject_gen is None:
+            # default version
+            def _subject_gen(expers):
+                return '{} experiment{} ended'.format(
+                            len(expers),
+                            's' if len(expers) > 1 else '')
+
+            subject_gen = _subject_gen
+        self.subject_gen = subject_gen
+        
+        # lambda [Experiments]: "email body"
+        if bodytext_gen is None:
+            # default version
+            def _bodytext_gen(expers):
+                bodytxt = ['{spec} status: {status}\n\nCommand: {command}'\
+                           .format(spec=exper.spec, 
+                                   status=exper.status,
+                                   command=exper.command)
+                           for exper in expers]
+                return '\n\n\n'.join(bodytxt)
+
+            bodytext_gen = _bodytext_gen
+        self.bodytext_gen = bodytext_gen
+        
+        self.queue = []
         
     
+    def enqueue(self, exper):
+        """
+        Auto-send when 'concur_email' number of experiments enqueued
+        """
+        self.queue.append(exper)
+        
+        if len(self.queue) >= self.concur_email:
+            self.flush_send()
+
+
+    def flush_send(self):
+        """
+        Flush the queue and send out all items, regardless of 'concur_email'
+        Do nothing when the queue is empty
+        """
+        if self.queue:
+            self.emailer.send(self.subject_gen(self.queue),
+                              self.bodytext_gen(self.queue))
+            self.queue = []
+        
+    
+class ExperimentManager(object):
+    
+    def __init__(self, expers, 
+                 concur_limit=4, 
+                 email_reporter=None):
+        self.expers = expers
+        # maximum number of concurrent experiments
+        self.concur_limit = concur_limit
+        self.email_reporter = email_reporter
+        
+        # experiment queue
+        self.queue = expers[:]
+        # finished experiments
+        self.num_ended = 0
+        # all experiments
+        self.num_all = len(expers)
+        
+        
+    def launch(self):
+        try:
+            self._launch_n(self.concur_limit)
+
+            while self.queue:
+                sleep(1) # check period
+                num_ended = self._update_queue()
+                # keep fixed number of expers running
+                self._launch_n(num_ended)
+                
+            # send any remaining experiment reports
+            self.email_reporter.flush_send()
+            
+        except KeyboardInterrupt:
+            print 'ExperimentManager interrupted.'
+            print 'Killing all experiments.'
+            for exper in self.expers:
+                exper.kill()
+                print exper.pid, 'killed'
     
     
+    def _launch_n(self, num_exper):
+        # launch n processes from queue head
+        for exper in self.queue[:num_exper]:
+            exper.launch()
+
+        del self.queue[:num_exper]
+
+    
+    def _update_queue(self):
+        # return number of ended expers and remove them from self.queue
+        newqueue = []
+        num_ended = 0
+        for exper in self.queue:
+            if exper.is_done():
+                num_ended += 1
+                print exper, 'done with status', exper.status
+                self.email_reporter.enqueue(exper)
+            else:
+                newqueue.append(exper)
+
+        self.queue = newqueue
+        return num_ended
