@@ -31,13 +31,11 @@ from itertools import izip, product, tee
 
 logger = logging.getLogger('main')
 
-from utils import prepare_dir, load_df, DummyLoop
-from utils import SaveExpParams, SaveLog, SaveParams, AttributeDict
+from utils import *
 from nn import ZCA, ContrastNorm
 from nn import ApproxTestMonitoring, FinalTestMonitoring, TestMonitoring
 from nn import LRDecay
 from ladder import LadderAE
-from misc import *
 
 
 class Whitening(Transformer):

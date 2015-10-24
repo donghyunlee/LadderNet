@@ -2,7 +2,6 @@ import os
 from misc import *
 
 import logging
-import numpy as np
 import theano
 from pandas import DataFrame, read_hdf
 
@@ -11,6 +10,34 @@ from blocks.main_loop import MainLoop
 from blocks.roles import add_role
 
 logger = logging.getLogger('main.utils')
+
+# ============== Theano generic utils ==============
+import theano as th
+import theano.tensor as T
+
+Trelu = lambda x: T.maximum(0, x)
+
+Tleakyrelu = lambda x: T.switch(x > 0., x, 0.1 * x)
+
+Tsoftplus = lambda x: T.log(1. + T.exp(x))
+
+Tsigmoid = lambda x: T.nnet.sigmoid(x)
+
+Tsoftmax = lambda x: T.nnet.softmax(x)
+
+def Tnonlinear(name, x):
+    act = {'relu': Trelu,
+     'sig': Tsigmoid,
+     'sigmoid': Tsigmoid,
+     'leakyrelu': Tleakyrelu,
+     'softplus': Tsoftplus,
+     'softmax': Tsoftmax}.get(name)
+
+    assert act, 'unknown nonlinearity: ' + name
+    if name == 'softmax':
+        x = x.flatten(2)
+    return act(x)
+# ==================================================
 
 
 def shared_param(init, name, cast_float32, role, **kwargs):

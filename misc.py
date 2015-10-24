@@ -7,8 +7,6 @@ import json
 import functools
 import os.path
 from os.path import join as ojoin
-import theano as th
-import theano.tensor as T
 import numpy as np
 import inspect
 import subprocess as pc
@@ -78,27 +76,3 @@ class JsonWriter(AttributeDict):
         AttributeDict.__init__(self, *args, **kwargs)
         self.update(json_load(json_file))
         
-        
-# =========== Theano specific ===========
-Trelu = lambda x: T.maximum(0, x)
-
-Tleakyrelu = lambda x: T.switch(x > 0., x, 0.1 * x)
-
-Tsoftplus = lambda x: T.log(1. + T.exp(x))
-
-Tsigmoid = lambda x: T.nnet.sigmoid(x)
-
-Tsoftmax = lambda x: T.nnet.softmax(x)
-
-def Tnonlinear(name, x):
-    act = {'relu': Trelu,
-     'sig': Tsigmoid,
-     'sigmoid': Tsigmoid,
-     'leakyrelu': Tleakyrelu,
-     'softplus': Tsoftplus,
-     'softmax': Tsoftmax}.get(name)
-
-    assert act, 'unknown nonlinearity: ' + name
-    if name == 'softmax':
-        x = x.flatten(2)
-    return act(x)

@@ -15,9 +15,8 @@ from blocks.bricks.cost import CategoricalCrossEntropy, MisclassificationRate
 from blocks.graph import add_annotation, Annotation
 from blocks.roles import add_role, PARAMETER, WEIGHT, BIAS
 
-from utils import shared_param, AttributeDict
+from utils import *
 from nn import maxpool_2d, global_meanpool_2d, BNPARAM
-from misc import *
 
 logger = logging.getLogger('main.model')
 floatX = theano.config.floatX
