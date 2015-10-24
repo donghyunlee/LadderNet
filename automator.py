@@ -46,6 +46,7 @@ class Experiment(object):
     
     def kill(self):
         kill(self._pid)
+        self._status = 'ended'
 
     
     @property

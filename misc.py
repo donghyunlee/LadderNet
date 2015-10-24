@@ -58,8 +58,8 @@ def nohup(cmd, log_files, verbose=True, dryrun=False):
 def kill(pid):
     if pid is None:
         return
-    
-    if isinstance(pid, collections.Iterable):
+
+    if isinstance(pid, list) or isinstance(pid, tuple):
         for p in pid:
             kill(p)
     else:
