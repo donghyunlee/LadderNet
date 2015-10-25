@@ -40,10 +40,10 @@ for gpu in gpus:
 
     try:
         # first launch_single in nohup detached
-        pc.check_output((sshstr.strip() + 
-                " 'cd ~/workspace/LadderNet && "
+        pc.call((sshstr.strip() + 
+                " sh -c \"'cd ~/workspace/LadderNet && "
                 ". ~/workspace/bin/activate && "
-                "nohup python -u launch_single.py {} > {} 2>&1 &'")\
+                "nohup python -u launch_single.py {} > {} 2>&1 &'\"")\
                 .format(fullgpu, gpu, logfile), 
             shell=True)
 
