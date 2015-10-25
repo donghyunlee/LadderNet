@@ -35,6 +35,9 @@ class Experiment(object):
         self._pid = nohup_py(self.command, self.logfile, 
                              verbose=verbose, 
                              dryrun=dryrun)
+        if verbose:
+            print '{} PID = {}\n'.format(self.spec, self._pid)
+
         if self._pid is not None:
             self._status = 'running'
     
@@ -76,37 +79,39 @@ class EmailReporter(object):
     """
     Specify how to send email when an experiment ends
     """
+    
+    @staticmethod
+    # lambda [Experiments]: "email subject"
+    def default_subject_gen(expers):
+        return '{} experiment{} ended'.format(
+                    len(expers),
+                    's' if len(expers) > 1 else '')
+    
+    # lambda [Experiments]: "email body"
+    @staticmethod
+    def default_bodytext_gen(expers):
+        bodytxt = ['{spec} status: {status}\n\nCommand: {command}'\
+                   .format(spec=exper.spec, 
+                           status=exper.status,
+                           command=exper.command)
+                   for exper in expers]
+        return '\n\n\n'.join(bodytxt)
+    
+    
     def __init__(self, emailer, 
-                 concur_email = 3,
-                 subject_gen = None,
-                 bodytext_gen = None):
+                 concur_email=3,
+                 subject_gen=None,
+                 bodytext_gen=None):
         self.emailer = emailer
         # number of experiments per email report
         self.concur_email = concur_email
-        
-        # lambda [Experiments]: "email subject"
+
         if subject_gen is None:
-            # default version
-            def _subject_gen(expers):
-                return '{} experiment{} ended'.format(
-                            len(expers),
-                            's' if len(expers) > 1 else '')
-
-            subject_gen = _subject_gen
+            subject_gen=EmailReporter.default_subject_gen
         self.subject_gen = subject_gen
-        
-        # lambda [Experiments]: "email body"
-        if bodytext_gen is None:
-            # default version
-            def _bodytext_gen(expers):
-                bodytxt = ['{spec} status: {status}\n\nCommand: {command}'\
-                           .format(spec=exper.spec, 
-                                   status=exper.status,
-                                   command=exper.command)
-                           for exper in expers]
-                return '\n\n\n'.join(bodytxt)
 
-            bodytext_gen = _bodytext_gen
+        if bodytext_gen is None:
+            bodytext_gen=EmailReporter.default_bodytext_gen
         self.bodytext_gen = bodytext_gen
         
         self.queue = []
@@ -138,13 +143,25 @@ class ExperimentManager(object):
     def __init__(self, expers, 
                  concur_limit=4, 
                  check_period=1,
-                 email_reporter=None):
+                 email_reporter=None,
+                 trailer_text=''):
         self.expers = expers
         # maximum number of concurrent experiments
         self.concur_limit = concur_limit
         # check per seconds
         self.check_period = check_period
         self.email_reporter = email_reporter
+
+        # slightly hack the bodytext generator
+        old_bodytext_gen = self.email_reporter.bodytext_gen
+        def trailer_bodytext_gen(expers):
+            body = old_bodytext_gen(expers)
+            # trailer_text appended to the last email
+            if self.expers[-1] in expers:
+                body += '\n' + trailer_text
+            return body
+
+        self.email_reporter.bodytext_gen = trailer_bodytext_gen
         
         # experiment yet to be launched
         self.wait_queue = expers[:]

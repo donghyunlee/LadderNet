@@ -47,7 +47,7 @@ class SentinelWhenFinish(SimpleExtension):
         self.sentinel = sentinel
 
     def do(self, which_callback, *args):
-        print >> open(self.sentinel, 'w'), 'finished'
+        print >> open(self.sentinel, 'w'), 'ended'
 # ==================================================
 
 
