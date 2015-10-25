@@ -42,6 +42,23 @@ def debugprint(*varnames):
         print name, '==>', eval(name,frame.f_globals,frame.f_locals)
         
         
+class PrintRedirection:
+    "Context manager: temporarily redirects stdout and stderr"
+    def __init__(self, stdout=sys.stdout, stderr=sys.stderr):
+        self._stdout = stdout
+        self._stderr = stderr
+            
+    def __enter__(self):
+        self._old_out, self._old_err = sys.stdout, sys.stderr
+        self._old_out.flush();  self._old_err.flush()
+        sys.stdout, sys.stderr = self._stdout, self._stderr
+            
+    def __exit__(self, exc_type, exc_value, traceback):
+        self._stdout.flush();   self._stderr.flush()
+        # restore the normal stdout and stderr
+        sys.stdout, sys.stderr = self._old_out, self._old_err
+        
+        
 # ========== File system ==========
 file_exists = os.path.exists
 
