@@ -9,7 +9,10 @@ class Experiment(object):
     
     def __init__(self, spec, command, logfile, sentinel):
         '''
-        Sentinel file contains status information
+        Sentinel file contains status and other information
+        1st line must be a valid state: ended, crashed, running
+        2nd+ lines contain extra info. 
+        Any line starting with "#" will be ignored
         '''
         self.spec = spec
         self.command = command
@@ -21,14 +24,19 @@ class Experiment(object):
 
         self._pid = None
         self._status = 'null'
+        self.info = '' # from sentinel file
     
     
     def _sentinel_info(self):
         # read status from the sentinel
         if file_exists(self.sentinel):
-            return open(self.sentinel).read().strip()
+            contents = map(str.strip, open(self.sentinel).readlines())
+            # ignore all lines starting with '#'
+            info = '\n'.join(filter(lambda x: not x.startswith('#'), 
+                                          contents[1:]))
+            return contents[0], info
         else:
-            return None
+            return None, ''
         
     
     def launch(self, verbose=True, dryrun=False):
@@ -36,7 +44,7 @@ class Experiment(object):
                              verbose=verbose, 
                              dryrun=dryrun)
         if verbose:
-            print '{} PID = {}\n'.format(self.spec, self._pid)
+            print 'Launch {} PID = {}\n'.format(self.spec, self._pid)
 
         if self._pid is not None:
             self._status = 'running'
@@ -51,9 +59,9 @@ class Experiment(object):
     @property
     def status(self):
         if self._pid is not None:
-            sentinel_info = self._sentinel_info()
-            if sentinel_info and self._status != 'killed':
-                self._status = sentinel_info
+            status, self.info = self._sentinel_info()
+            if status and self._status != 'killed':
+                self._status = status
 
         return self._status
     
@@ -90,12 +98,16 @@ class EmailReporter(object):
     # lambda [Experiments]: "email body"
     @staticmethod
     def default_bodytext_gen(expers):
-        bodytxt = ['{spec} status: {status}\n\nCommand: {command}'\
+        bodytxt = ['{spec} status: {status}\n\n'
+                   'Info:\n{info}\n\n'
+                   'Command: {command}'\
                    .format(spec=exper.spec, 
                            status=exper.status,
+                           info=exper.info,
                            command=exper.command)
                    for exper in expers]
-        return '\n\n\n'.join(bodytxt)
+        
+        return ('\n' + '='*37 + '\n\n').join(bodytxt)
     
     
     def __init__(self, emailer, 
@@ -213,7 +225,8 @@ class ExperimentManager(object):
         for exper in self.running_queue:
             if exper.is_done():
                 num_ended += 1
-                print exper, 'exits with status "{}"'.format(exper.status)
+                print 'Exit {} with status "{}"\nInfo:\n{}\n'\
+                    .format(exper, exper.status, exper.info)
                 self.email_reporter.enqueue(exper)
             else:
                 newqueue.append(exper)
