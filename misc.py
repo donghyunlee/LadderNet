@@ -15,11 +15,12 @@ import collections
 from time import sleep
 from copy import deepcopy
 from json import loads as json_parse
-from json import dumps as json_str
 import random
 
 
 file_exists = os.path.exists
+
+json_str = functools.partial(json.dumps, indent=4)
 
 
 def file_time(fname):

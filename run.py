@@ -658,7 +658,9 @@ if __name__ == "__main__":
                     vars(args)[k] = v[0]
 
             err = get_error(vars(args))
-            logger.info('Test error: %f' % err)
+#             logger.info('Test error: %f' % err)
+            print 'Test error: {:.5g}'.format(err)
+            
 
         elif args.cmd == "train":
             listdicts = {k: v for k, v in vars(args).iteritems() if type(v) is list}
