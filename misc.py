@@ -9,12 +9,13 @@ import os.path
 from os.path import join as ojoin
 from os.path import isfile, isdir
 import shutil
-import numpy as np
 import inspect
 import subprocess as pc
 import collections
 from time import sleep
 from copy import deepcopy
+from json import loads as json_parse
+from json import dumps as json_str
 import random
 
 
@@ -92,6 +93,14 @@ class JsonWriter(AttributeDict):
         AttributeDict.__init__(self, *args, **kwargs)
         self.update(json_load(json_file))
         
+
+def min_at(values):
+    return min( (v, i) for i, v in enumerate(values) )
+
+
+def max_at(values):
+    return max( (v, i) for i, v in enumerate(values) )
+
 
 # ========== email notification ==========
 import smtplib
