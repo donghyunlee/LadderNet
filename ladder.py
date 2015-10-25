@@ -567,9 +567,7 @@ class LadderAE():
             # "fullmlp_<hidden>_<nonlinear>_<initer>"
             # "fullmlp_<hidden>_<nonlinear>_rand+sigma"
             g_type = g_type.split('_')
-
-            # hidden layer can be 2,3,4
-            n_hidden = map(int, g_type[1].split(','))
+            n_hidden = int(g_type[1])
             nonlinear = g_type[2]
             initer = g_type[3]
             
@@ -581,16 +579,15 @@ class LadderAE():
                     rand_sigma = float(initer[1])
                 initer = 'rand'
             
-            def get_rand_shareds(prefix, layer, role=WEIGHT):
+            def get_rand_shareds(suffix, role=WEIGHT):
                 return [self.shared(rand_sigma * np.random.randn(out_dim), 
-                                    gen_id('{}{}_{}'.format(prefix, h, layer)),
-                                    role=role)
-                        for h in range(n_hidden[layer])]
+                                    gen_id(suffix + str(i)), role=role)
+                        for i in range(n_hidden)]
 
-            def get_const_shareds(prefix, const, role=WEIGHT):
+            def get_const_shareds(suffix, const, role=WEIGHT):
                 return [self.shared(const * np.ones(out_dim), 
-                                    gen_id(prefix + str(h)), role=role)
-                        for h in range(n_hidden[0])]
+                                    gen_id(suffix + str(i)), role=role)
+                        for i in range(n_hidden)]
 
             if initer == 'rand':
                 wz = get_rand_shareds('mlp_wz')
@@ -598,24 +595,18 @@ class LadderAE():
                 b = get_rand_shareds('mlp_b', role=BIAS)
                 wo = get_rand_shareds('mlp_wo')
             elif initer == 'zeroone' or initer == 'zerone' or initer == 'onezero':
-                if len(n_hidden) > 1:
-                    raise Exception('Multiple layer of hidden units '
-                        'in fullmlp mode does not support zeroone/onezero init')
-                    sys.exit(1)
-                    
                 # vertical connection (u) set to 0
                 if initer.startswith('zero'):
-                    wz = get_const_shareds('mlp_wz', 1./n_hidden[0])
+                    wz = get_const_shareds('mlp_wz', 1./n_hidden)
                     wu = get_const_shareds('mlp_wu', 0)
                 # vertical connection (u) set to 1
                 else:
                     wz = get_const_shareds('mlp_wz', 0)
-                    wu = get_const_shareds('mlp_wu', 1./n_hidden[0])
+                    wu = get_const_shareds('mlp_wu', 1./n_hidden)
 
                 b = get_const_shareds('mlp_b', 0, role=BIAS)
-                wo = get_const_shareds('mlp_wo', 1./n_hidden[0])
+                wo = get_const_shareds('mlp_wo', 1./n_hidden)
 
-            # combine to get z_est
             z_est = 0
             for i in range(n_hidden):
                 z_est += wo[i] * Tnonlinear(nonlinear,

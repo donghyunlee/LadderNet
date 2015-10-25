@@ -658,8 +658,9 @@ if __name__ == "__main__":
                     vars(args)[k] = v[0]
 
             err = get_error(vars(args))
-#             logger.info('Test error: %f' % err)
-            print 'Test error: {:.5g}'.format(err)
+            test_error_msg = 'Test error: {:.5g}'.format(err)
+            logger.info(test_error_msg)
+            print test_error_msg
             
 
         elif args.cmd == "train":
