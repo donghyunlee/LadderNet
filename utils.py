@@ -14,6 +14,7 @@ logger = logging.getLogger('main.utils')
 # ============== My addition ==============
 import theano as th
 import theano.tensor as T
+import numpy as np
 
 Trelu = lambda x: T.maximum(0, x)
 
@@ -40,14 +41,33 @@ def Tnonlinear(name, x):
 
 
 class SentinelWhenFinish(SimpleExtension):
-    """When finished, write out to a sentinel file."""
-    def __init__(self, sentinel, **kwargs):
+    """
+    When finished, write out to a sentinel file.
+    Also save all monitored variable history to json
+    """
+    def __init__(self, save_dir, global_history, **kwargs):
         kwargs['after_training'] = True
         super(SentinelWhenFinish, self).__init__(**kwargs)
-        self.sentinel = sentinel
+        self.sentinel = ojoin(save_dir, 'sentinel.txt')
+        self.global_history = global_history
+
 
     def do(self, which_callback, *args):
-        print >> open(self.sentinel, 'w'), 'ended'
+        sentinel = open(self.sentinel, 'w')
+        print >> sentinel, 'ended'
+        print >> sentinel, '#\n# validation report:'
+
+        info = AttributeDict()
+        costs = self.global_history['valid_approx_cost_class_corr']
+        ers = self.global_history['valid_approx_error_rate']
+
+        info.epochs = len(costs)
+        info.min_cost, min_i = min_at(costs)
+        info.ER_at_min_cost = ers[min_i]
+        info.min_ER = min(ers)
+        
+        print >> sentinel, json_str(info)
+        sentinel.close()
 # ==================================================
 
 
@@ -205,15 +225,27 @@ class SaveExpParams(SimpleExtension):
 #                   complevel=5, complib='blosc')
 
 class SaveLog(SimpleExtension):
-    def __init__(self, dir, show=None, **kwargs):
+    def __init__(self, save_dir, global_history, **kwargs):
         super(SaveLog, self).__init__(**kwargs)
+        self.save_dir = save_dir
+        self.global_history = global_history
 
     def do(self, which_callback, *args):
         epoch = self.main_loop.status['epochs_done']
         current_row = self.main_loop.log.current_row
         logger.info("\nIter:%d" % epoch)
-        for element in current_row:
-            logger.info(str(element) + ":%f" % current_row[element])
+        for var in current_row:
+            varstr = str(var)
+            value = float(current_row[var])
+            if varstr in self.global_history:
+                self.global_history[varstr].append(value)
+            else:
+                self.global_history[varstr] = [value]
+
+            logger.info('{}:{:.7g}'.format(varstr, value))
+        
+        # Save all monitored vars to json file
+        json_save(ojoin(self.save_dir, 'monitor.json'), self.global_history)
 
 
 def prepare_dir(save_to, results_dir='results', override=True):
