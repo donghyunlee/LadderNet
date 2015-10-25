@@ -156,7 +156,7 @@ class ExperimentManager(object):
                  concur_limit=4, 
                  check_period=1,
                  email_reporter=None,
-                 trailer_text=''):
+                 email_trailer=''):
         self.expers = expers
         # maximum number of concurrent experiments
         self.concur_limit = concur_limit
@@ -168,9 +168,9 @@ class ExperimentManager(object):
         old_bodytext_gen = self.email_reporter.bodytext_gen
         def trailer_bodytext_gen(expers):
             body = old_bodytext_gen(expers)
-            # trailer_text appended to the last email
+            # trailer text appended to the last email
             if self.expers[-1] in expers:
-                body += '\n' + trailer_text
+                body += '\n' + email_trailer
             return body
 
         self.email_reporter.bodytext_gen = trailer_bodytext_gen
