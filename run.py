@@ -630,7 +630,7 @@ if __name__ == "__main__":
     add_train_params(train_cmd, use_defaults=True)
 
     # EVALUATE
-    load_cmd = subparsers.add_parser('evaluate', help='Evaluate test error')
+    load_cmd = subparsers.add_parser('eval', help='Evaluate test error')
     load_cmd.add_argument('load_from', type=str,
                           help="Destination to load the state from")
     load_cmd.add_argument('--data-type', type=str, default='test',
@@ -650,7 +650,7 @@ if __name__ == "__main__":
     
     # if failure, write to sentinel file
     try:
-        if args.cmd == 'evaluate':
+        if args.cmd == 'eval':
             for k, v in vars(args).iteritems():
                 if type(v) is list:
                     assert len(v) == 1, "should not be a list when loading: %s" % k

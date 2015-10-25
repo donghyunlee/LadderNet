@@ -121,9 +121,11 @@ def gen_experiments(specs):
 if __name__ == '__main__':
     gpu = sys.argv[1]
     
+    # all emails will have launch time as subject
+    subject_common_str = datetime.now().strftime(' experiment %m/%d %H:%M')
+    
     def gpu_subject_gen(expers):
-        return datetime.now().strftime(
-                    GPU_FULLNAME[gpu] + ' experiment %m/%d')
+        return GPU_FULLNAME[gpu] + subject_common_str
 
     email_info = map(str.strip, open('email_info.txt').readlines())
     emailer = Emailer(*email_info)
