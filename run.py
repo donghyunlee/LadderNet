@@ -7,6 +7,7 @@ import subprocess
 from argparse import ArgumentParser, Action
 from collections import OrderedDict
 import sys
+import traceback
 
 import numpy
 import time
@@ -443,6 +444,12 @@ def train(cli_params):
         ladder.costs.total] \
 #         + ladder.costs.denois.values()
 
+    # Make a global history recorder so that we can get summary at end of 
+    # training when we write to Sentinel
+    # global_history records all relevant monitoring vars
+    # updated by SaveLog every time
+    global_history = {}
+
     main_loop = MainLoop(
         training_algorithm,
         # Datastream used for training
@@ -457,7 +464,8 @@ def train(cli_params):
             FinishAfter(after_n_epochs=p.num_epochs),
             
             # write out to sentinel file for experiment automator to work
-            SentinelWhenFinish(sentinel=ojoin(p.save_dir, 'sentinel.txt')),
+            SentinelWhenFinish(save_dir=p.save_dir,
+                               global_history=global_history),
 
             # This will estimate the validation error using
             # running average estimates of the batch normalization
@@ -494,7 +502,9 @@ def train(cli_params):
             SaveParams('valid_approx_cost_class_corr', model, p.save_dir),
 #             SaveParams(None, all_params, p.save_dir, after_epoch=True),
             SaveExpParams(p, p.save_dir, before_training=True),
-            SaveLog(p.save_dir, after_epoch=True),
+            SaveLog(save_dir=p.save_dir, 
+                    after_epoch=True,
+                    global_history=global_history),
             Printing(),
 #             ShortPrinting(short_prints),
             LRDecay(ladder.lr, p.num_epochs * p.lrate_decay, p.num_epochs,
@@ -640,7 +650,6 @@ if __name__ == "__main__":
     
     # if failure, write to sentinel file
     try:
-        
         if args.cmd == 'evaluate':
             for k, v in vars(args).iteritems():
                 if type(v) is list:
@@ -665,12 +674,17 @@ if __name__ == "__main__":
                 if train(d) is None:
                     break
     
-    except Exception, e:
+    except:
         print '================== CRASHED =================='
-        print str(e)
-        sentinel_file = ojoin('results', args.save_to, 'sentinel.txt')
-        print >> open(sentinel_file, 'w'), 'crashed'
+
+        sentinel = ojoin('results', args.save_to, 'sentinel.txt')
+        sentinel = open(sentinel, 'w')
+        print >> sentinel, 'crashed'
+        print >> sentinel, '#\n#Crash report'
+        print >> sentinel, traceback.format_exc()
+        sentinel.close()
         
+        traceback.print_exc()
         sys.exit(1)
         
     logger.info('Took %.1f minutes' % ((time.time() - t_start) / 60.))
