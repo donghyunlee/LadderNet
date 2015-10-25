@@ -5,6 +5,9 @@ Automate experiment launching and managing
 
 from misc import *
 
+# raise exceptions when SIGINT, SIGTERM are received
+register_signals()
+
 class Experiment(object):
     
     def __init__(self, spec, command, logfile, sentinel):
@@ -201,8 +204,8 @@ class ExperimentManager(object):
             
             print 'All experiments completed.'
             
-        except KeyboardInterrupt:
-            print '\n\nExperimentManager interrupted.'
+        except SignalReceived, e:
+            print '\n\nExperimentManager received ' + e.signame
             print 'Kill all running experiments:\n'
             for exper in self.running_queue:
                 exper.kill()

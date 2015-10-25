@@ -17,15 +17,46 @@ from copy import deepcopy
 from json import loads as json_parse
 import random
 from datetime import datetime
+import signal
 
 
+class AttributeDict(dict):
+    __getattr__ = dict.__getitem__
+
+    def __setattr__(self, a, b):
+        self.__setitem__(a, b)
+
+
+def min_at(values):
+    return min( (v, i) for i, v in enumerate(values) )
+
+
+def max_at(values):
+    return max( (v, i) for i, v in enumerate(values) )
+
+
+def debugprint(*varnames):
+    record=inspect.getouterframes(inspect.currentframe())[1]
+    frame=record[0]
+    for name in varnames:
+        print name, '==>', eval(name,frame.f_globals,frame.f_locals)
+        
+        
+# ========== File system ==========
 file_exists = os.path.exists
-
-json_str = functools.partial(json.dumps, indent=4)
-
 
 def file_time(fname):
     return str(os.path.getctime(fname))
+
+
+# ========== JSON ==========
+json_str = functools.partial(json.dumps, indent=4)
+
+        
+class JsonWriter(AttributeDict):
+    def __init__(self, json_file, *args, **kwargs):
+        AttributeDict.__init__(self, *args, **kwargs)
+        self.update(json_load(json_file))
 
 
 def json_load(filepath):
@@ -38,13 +69,7 @@ def json_save(filepath, dat):
         json.dump(dat, fp, indent=4)
 
 
-def debugprint(*varnames):
-    record=inspect.getouterframes(inspect.currentframe())[1]
-    frame=record[0]
-    for name in varnames:
-        print name, '==>', eval(name,frame.f_globals,frame.f_locals)
-        
-        
+# ========== Processes ==========
 def nohup(cmd, log_files, verbose=True, dryrun=False):
     if isinstance(log_files, str):
         outlog, errlog = log_files, '&1' # 2>&1
@@ -70,9 +95,12 @@ def nohup_py(cmd, *args, **kwargs):
     return nohup('python -u {}'.format(cmd), *args, **kwargs)
 
 
-def kill(pid):
+def kill(pid, signal='INT'):
     if pid is None:
         return
+    
+    if not isinstance(signal, str):
+        signal = str(signal)
 
     if isinstance(pid, list) or isinstance(pid, tuple):
         for p in pid:
@@ -80,31 +108,48 @@ def kill(pid):
     else:
         if not isinstance(pid, str):
             pid = str(pid)
-        pc.call('kill -9 ' + pid, shell=True)
-
-
-class AttributeDict(dict):
-    __getattr__ = dict.__getitem__
-
-    def __setattr__(self, a, b):
-        self.__setitem__(a, b)
-
-
-class JsonWriter(AttributeDict):
-    def __init__(self, json_file, *args, **kwargs):
-        AttributeDict.__init__(self, *args, **kwargs)
-        self.update(json_load(json_file))
+        pc.call(['kill', '-'+signal, pid])
         
+        
+class SignalReceived(Exception):
+    """
+    Raised when any signal received
+    .signum: value of the signal, symbolic
+    .signame: name of the signal, string
+    """
+    pass
 
-def min_at(values):
-    return min( (v, i) for i, v in enumerate(values) )
+
+def register_signals(signames=None):
+    """
+    signames is a list of supported signals: SIGINT, SIGSTOP, etc.
+    if None, default to register all supported signals
+    """
+    all_signames = filter(lambda s: (s.startswith('SIG')
+                                     # not sure why ...
+                                     and not s.startswith('SIGC')
+                                     # OS cannot catch these two
+                                     and s not in ['SIGKILL', 'SIGSTOP']
+                                     and '_' not in s),
+                          dir(signal))
+    signum_to_name = {getattr(signal, sig): sig for sig in all_signames}
+
+    if signames is None:
+        signames = all_signames
+
+    def _sig_handler(signum, frame):
+        signame = signum_to_name[signum]
+        exc = SignalReceived('{} [{}] received'.format(signame, signum))
+        exc.signum = signum
+        exc.signame = signame
+        exc.frame = frame
+        raise exc
+            
+    for sig in signames:
+        signal.signal(getattr(signal, sig), _sig_handler)
 
 
-def max_at(values):
-    return max( (v, i) for i, v in enumerate(values) )
-
-
-# ========== email notification ==========
+# ========== Email API ==========
 import smtplib
 from email.mime.text import MIMEText
 from email.utils import formataddr
