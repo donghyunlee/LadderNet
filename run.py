@@ -677,12 +677,13 @@ if __name__ == "__main__":
     except:
         print '================== CRASHED =================='
 
-        sentinel = ojoin('results', args.save_to, 'sentinel.txt')
-        sentinel = open(sentinel, 'w')
-        print >> sentinel, 'crashed'
-        print >> sentinel, '#\n#Crash report'
-        print >> sentinel, traceback.format_exc()
-        sentinel.close()
+        if hasattr(args, 'save_to'):
+            sentinel = ojoin('results', args.save_to, 'sentinel.txt')
+            sentinel = open(sentinel, 'w')
+            print >> sentinel, 'crashed'
+            print >> sentinel, '#\n#Crash report'
+            print >> sentinel, traceback.format_exc()
+            sentinel.close()
         
         traceback.print_exc()
         sys.exit(1)
