@@ -40,19 +40,16 @@ for gpu in gpus:
 
     try:
         # first launch_single in nohup detached
-        pc.call((sshstr.strip() + 
+        # sh -c is REQUIRED for nohup not to block ssh
+        out = pc.check_output((sshstr.strip() + 
                 " sh -c \"'cd ~/workspace/LadderNet && "
                 ". ~/workspace/bin/activate && "
-                "nohup python -u launch_single.py {} > {} 2>&1 &'\"")\
-                .format(fullgpu, gpu, logfile), 
+                "nohup python -u launch_single.py {} > {logfile} 2>&1 & "
+                "sleep 2 && " # must wait before cat, not so fast to launch
+                "cat ~/workspace/LadderNet/{logfile}'\"")\
+                .format(fullgpu, gpu, logfile=logfile), 
             shell=True)
 
-        # echo the log file
-        out = pc.check_output((sshstr.strip() + 
-                " 'cd ~/workspace/LadderNet && "
-                "cat {}'")\
-                .format(fullgpu, logfile), 
-            shell=True)
         print out
 
     except pc.CalledProcessError, e:
