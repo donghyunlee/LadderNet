@@ -18,6 +18,7 @@ from json import loads as json_parse
 import random
 from datetime import datetime
 import signal
+import pprint
 
 
 class AttributeDict(dict):
@@ -57,7 +58,11 @@ class PrintRedirection:
         self._stdout.flush();   self._stderr.flush()
         # restore the normal stdout and stderr
         sys.stdout, sys.stderr = self._old_out, self._old_err
-        
+
+
+pp = pprint.PrettyPrinter(indent=4)
+pprint = pp.pprint
+
         
 # ========== File system ==========
 file_exists = os.path.exists
